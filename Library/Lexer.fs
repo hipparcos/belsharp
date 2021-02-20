@@ -16,30 +16,29 @@ module Lexer =
         | Symbol of string
 
     /// Active Patterns used to match the current character.
-    let internal (|Character|Digit|Null|ParenL|ParenR|Whitespace|) (c: char) =
-        if c = '\000' then Null
-        elif Char.IsDigit(c) then Digit
+    let internal (|Character|Digit|ParenL|ParenR|Whitespace|) (c: char) =
+        if Char.IsDigit(c) then Digit
         elif Char.IsWhiteSpace(c) then Whitespace
         elif c = '(' then ParenL
         elif c = ')' then ParenR
         else Character
 
-    /// firstOrNull: return the first character of STR or the null char.
-    let internal firstOrNull (str: string) : char =
-        if (String.length str) = 0 then '\000'
-        else str.[0]
+    /// maybeCharAt: return the character at OFFSET of STR or None.
+    let internal maybeCharAt (str: string) (offset : int) : char option =
+        if (String.length str) <= offset then None
+        else Some(str.[offset])
 
     /// lexSymbol: lex a symbol from STR (characters + digits).
-    let rec internal lexSymbol (str: string) (acc: string) : Token * string =
-        match (firstOrNull str) with
-            | Character|Digit -> lexSymbol str.[1..] (acc + string str.[0])
-            | _ -> (Symbol acc, str)
+    let rec internal lexSymbol (str: string) (offset: int) : Token * string =
+        match (maybeCharAt str offset) with
+            | Some(Character) | Some(Digit) -> lexSymbol str (offset + 1)
+            | _ -> (Symbol str.[0..(offset-1)], str.[offset..])
 
     /// lexNumber: lex a Number from STR (digits).
-    let rec internal lexNumber (str: string) (acc: string) : Token * string =
-        match (firstOrNull str) with
-            | Digit -> lexNumber str.[1..] (acc + string str.[0])
-            | _ -> (Number (acc |> int), str)
+    let rec internal lexNumber (str: string) (offset: int) : Token * string =
+        match (maybeCharAt str offset) with
+            | Some(Digit) -> lexNumber str (offset + 1)
+            | _ -> (Number (str.[0..(offset-1)] |> int), str.[offset..])
 
     /// lexToken: lex any kind of token from STR.
     /// Return a token and the rest of STR that has not been consumed.
@@ -47,10 +46,10 @@ module Lexer =
         if (String.length str) = 0 then (EOF, "")
         else match str.[0] with
                  | Whitespace -> lexToken str.[1..]
-                 | Digit -> lexNumber str.[1..] (string str.[0])
+                 | Digit -> lexNumber str 1
                  | ParenL -> (ParenL, str.[1..])
                  | ParenR -> (ParenR, str.[1..])
-                 | _ -> lexSymbol str.[1..] (string str.[0])
+                 | _ -> lexSymbol str 1
 
     /// Lex: lex STR producing a lazy sequence of Tokens.
     /// The returned sequence ends with the EOF token.
