@@ -2,38 +2,63 @@ namespace Library
 
 open System
 
+// Parser is a tail recursive parser implementation.
+// The public interface is Atom, Sexpr and Parse.
 module Parser =
 
+    /// Atom: the leaf of the AST.
     type Atom =
         | Nil
         | Number of int
         | Symbol of string
+
+    /// Sexpr: the nodes of the AST.
+    type Sexpr =
+        | Atom of Atom
+        | Pair of Sexpr * Sexpr
+        | Sexpr of Sexpr list
+
+    /// State: the parsing state.
+    type internal State =
+        | EndOfParsing
+        | Parsing of Parser
+
+    /// StateAction: operations on the stack of states.
+    and internal StateAction =
+        | KeepState
+        | PopState
+        | PushState of State
+        | ReplaceBy of State
+
+    /// SexprAction: operations on the AST, associated to state changes.
+    and internal SexprAction =
+        | AccumulateSexpr of Sexpr * StateAction
+        | FillupSexpr of Sexpr
+        | NestSexpr
+        | NestSexprInPair
+        | None of StateAction
+
+    /// Parser: parsing state implementation.
+    and internal Parser = Lexer.Token -> Sexpr list -> Result<SexprAction, string>
+
+    /// ParsingResult: result of Parse, used to explicitly cast in tests.
+    type ParsingResult = Result<Sexpr, string>
 
     let AtomToString = function
         | Nil -> "nil"
         | Number n -> string n
         | Symbol s -> s
 
-    type Sexpr =
-        | Atom of Atom
-        | Pair of Sexpr * Sexpr
-
-    let SexprToString sexpr =
-        let rec loop = function
-            | Atom a -> AtomToString a
-            | Pair (l, Atom r) -> (loop l) + " . " + (AtomToString r)
-            | Pair (l, r) -> (loop l) + " " + (loop r)
+    let rec SexprToString sexpr =
+        let concat l = String.concat " " (l
+                                          |> List.rev
+                                          |> List.tail
+                                          |> List.rev
+                                          |> List.map SexprToString)
         match sexpr with
             | Atom a -> AtomToString a
-            | _ -> "(" + (loop sexpr) + ")"
-
-    type State =
-        | EndOfParsing
-        | Parsing of Parser
-
-    and Parser = Lexer.Token -> Sexpr list -> Result<Sexpr, string> option * State
-
-    type ParsingResult = Result<Sexpr, string>
+            | Pair (car, cdr) -> $"( {SexprToString car} . {SexprToString cdr} )"
+            | Sexpr l -> $"( {concat l} )"
 
     let ResultToString = function
         | Ok sexpr -> SexprToString sexpr
@@ -45,72 +70,110 @@ module Parser =
         | Lexer.Symbol s -> Ok (Symbol s)
         | _ -> Error "not an atom"
 
-    let internal ParseClosePair tok acc =
+    // ParsePairRightParen: parse the right parenthesis of a dotted pair.
+    // Transition from ParsePairCDR.
+    let rec internal ParsePairRightParen tok acc =
         match tok with
-            | Lexer.EOF -> (Some(Error "unclosed pair"), EndOfParsing)
-            | Lexer.ParenL -> (Some(Error "nested list not supported"), EndOfParsing)
+            | Lexer.EOF -> Error "unclosed pair"
+            | Lexer.ParenL -> Ok NestSexpr
             | Lexer.ParenR ->
                 match acc with
-                    | [f; s] -> (Some(Ok (Pair (s, f))), EndOfParsing)
-                    | _ -> (Some(Error "malformed pair"), EndOfParsing)
-            | _ -> (Some(Error "trailing object in pair"), EndOfParsing)
+                    | [f; s] -> Ok (FillupSexpr (Pair (s, f)))
+                    | _ -> Error "malformed pair"
+            | _ -> Error "trailing object in pair"
 
-    let internal ParsePair tok acc =
+    // ParsePairCDR: parse the CDR of a pair.
+    // Transition from dot symbol in 2nd position of a list.
+    and internal ParsePairCDR tok acc =
         match tok with
-            | Lexer.EOF -> (Some(Error "unclosed pair"), EndOfParsing)
-            | Lexer.ParenR -> (Some(Error "malformed pair"), EndOfParsing)
-            | Lexer.ParenL -> (Some(Error "nested list not supported"), EndOfParsing)
+            | Lexer.EOF -> Error "unclosed pair"
+            | Lexer.ParenR -> Error "malformed pair"
+            | Lexer.ParenL -> Ok NestSexprInPair
             | Lexer.Number _ | Lexer.Symbol _ ->
                 let atom = ParseAtom tok
                 match atom with
-                    | Ok(atom) -> (Some(Ok (Atom atom)), Parsing ParseClosePair)
-                    | Error(err) -> (Some(Error err), EndOfParsing)
+                    | Ok a ->
+                        Ok (AccumulateSexpr (Atom a, ReplaceBy (Parsing ParsePairRightParen)))
+                    | Error err -> Error err
 
-    let rec internal ParseList tok acc =
+    // ParseList: parse a proper list, may transition to ParsePairCDR.
+    // Transition from left parenthesis.
+    and internal ParseList tok acc =
         match tok with
-            | Lexer.EOF -> (Some(Error("unclosed pair")), EndOfParsing)
+            | Lexer.EOF -> Error "unclosed pair"
             | Lexer.ParenR ->
                 match acc with
-                    | [] -> (Some(Ok(Atom(Nil))), EndOfParsing)
-                    | _ -> let result = List.fold (fun a e -> Pair (e, a))
-                                                  (Pair ((List.head acc), Atom Nil))
-                                                  (List.tail acc)
-                           (Some(Ok(result)), EndOfParsing)
-            | Lexer.ParenL -> (Some(Error("nested list not supported")), EndOfParsing)
+                    | [] -> Ok (FillupSexpr (Atom Nil))
+                    | _ -> Ok (FillupSexpr (Sexpr (List.rev ((Atom Nil)::acc))))
+            | Lexer.ParenL -> Ok NestSexpr
             | Lexer.Symbol s when s = "."  ->
                 match acc with
-                    | [ _ ] -> (None, Parsing ParsePair)
-                    | _ -> (Some(Ok(Atom (Symbol "."))), Parsing ParseList)
+                    | [ _ ] -> Ok (None (ReplaceBy (Parsing ParsePairCDR)))
+                    | _ -> Ok (AccumulateSexpr (Atom (Symbol "."), KeepState))
             | Lexer.Number _ | Lexer.Symbol _ ->
                 let atom = ParseAtom tok
                 match atom with
-                    | Ok(atom) -> (Some(Ok(Atom atom)), Parsing ParseList)
-                    | Error(err) -> (Some(Error err), EndOfParsing)
+                    | Ok a -> Ok (AccumulateSexpr (Atom a, KeepState))
+                    | Error err -> Error err
 
+    // ParseTopLevel: initial parsing state.
     let internal ParseTopLevel tok acc =
         match tok with
-            | Lexer.EOF -> (Some(Ok(Atom Nil)), EndOfParsing)
-            | Lexer.ParenR -> (Some(Error "unexpected closing parenthesis"), EndOfParsing)
-            | Lexer.ParenL -> (None, Parsing(ParseList))
+            | Lexer.EOF -> Ok (None (ReplaceBy EndOfParsing))
+            | Lexer.ParenR -> Error "unexpected closing parenthesis"
+            | Lexer.ParenL -> Ok NestSexpr
             | Lexer.Number _ | Lexer.Symbol _ ->
-                let atom = ParseAtom tok
-                match atom with
-                    | Ok(atom) -> (Some(Ok (Atom atom)), EndOfParsing)
-                    | Error(err) -> (Some(Error err), EndOfParsing)
+                match (ParseAtom tok) with
+                    | Ok a -> Ok (AccumulateSexpr (Atom a, ReplaceBy EndOfParsing))
+                    | Error err -> Error err
 
+    // getStateAction: translate SexprAction to action of stack of states.
+    let internal getStateAction = function
+        | AccumulateSexpr (_, action) -> [action]
+        | FillupSexpr _ -> [PopState]
+        | NestSexpr -> [PushState (Parsing ParseList)]
+        | NestSexprInPair ->
+            [ReplaceBy (Parsing ParsePairRightParen); PushState (Parsing ParseList)]
+        | None action -> [action]
+
+    // updateStates: apply actions on states.
+    // Allow NestSexprInPair to return a 2 actions.
+    let rec internal updateStates (actions : StateAction list) (states : State list) =
+        if actions.IsEmpty then states
+        else
+            match actions.Head with
+                | KeepState -> updateStates actions.Tail states
+                | PopState -> updateStates actions.Tail states.Tail
+                | PushState s -> updateStates actions.Tail (s::states)
+                | ReplaceBy s -> updateStates actions.Tail (s::states.Tail)
+
+    // Parse: parse stream of TOKENS, return a Sexpr.
+    // This is a tail recursive function.
+    // It manages the stack of Sexp and the stack of states.
     let Parse (tokens : seq<Lexer.Token>) : ParsingResult =
-        let rec loop tokens (state : State) (acc : Sexpr list) =
+        let rec loop tokens (states : State list) (acc : list<Sexpr list>) =
+            let state = List.head states
             match state with
-                | EndOfParsing -> Ok(List.head acc)
+                | EndOfParsing -> Ok(match acc.Head with
+                                         | [] -> Atom Nil
+                                         | l -> l.Head
+                                     )
                 | Parsing parser ->
                     if Seq.isEmpty tokens then Error "unexcepted end of stream"
                     else
                         let tok = Seq.head tokens
-                        let result = parser tok acc
-                        match result with
-                            | (Some(Error err), _) -> Error err
-                            | (None, state) -> loop (Seq.tail tokens) state acc
-                            | (Some(Ok sexpr), state) ->
-                                loop (Seq.tail tokens) state (sexpr::acc)
+                        match (parser tok acc.Head) with
+                            | Error err -> Error err
+                            | Ok action ->
+                                loop (Seq.tail tokens)
+                                     (updateStates (getStateAction action) states)
+                                     (match action with
+                                          | AccumulateSexpr (sexpr, _) ->
+                                              (sexpr::acc.Head)::acc.Tail
+                                          | FillupSexpr sexpr ->
+                                              (sexpr::acc.Tail.Head)::acc.Tail.Tail
+                                          | NestSexpr | NestSexprInPair -> []::acc
+                                          | None _ -> acc
+                                      )
         if Seq.isEmpty tokens then Error "empty stream of tokens"
-        else loop tokens (Parsing ParseTopLevel) []
+        else loop tokens [Parsing ParseTopLevel; EndOfParsing] [[]]

@@ -120,6 +120,35 @@ let it_should_parse_pair_of_dots () =
     )
 
 [<Test>]
+let it_should_parse_cdr_nested_pairs () =
+    let got = Parser.Parse (seq {
+        Lexer.ParenL        // ( sym1 . ( sym2 . ( sym3 ) ) )
+        Lexer.Symbol "sym1"
+        Lexer.Symbol "."
+        Lexer.ParenL        // ( sym2 . ( sym3 ) )
+        Lexer.Symbol "sym2"
+        Lexer.Symbol "."
+        Lexer.ParenL        // ( sym3 )
+        Lexer.Symbol "sym3"
+        Lexer.ParenR
+        Lexer.ParenR
+        Lexer.ParenR
+        Lexer.EOF
+    })
+    printfn "%s" (Parser.ResultToString got)
+    Assert.That(
+        got,
+        Is.EqualTo(
+            Parser.ParsingResult.Ok (
+                Parser.Pair ((Parser.Atom (Parser.Symbol "sym1")),
+                             (Parser.Pair ((Parser.Atom (Parser.Symbol "sym2")),
+                                           (Parser.Sexpr [Parser.Atom (Parser.Symbol "sym3");
+                                                          Parser.Atom Parser.Nil]))))
+            )
+        )
+    )
+
+[<Test>]
 let it_should_parse_list () =
     let got = Parser.Parse (seq {
         Lexer.ParenL
@@ -134,10 +163,68 @@ let it_should_parse_list () =
         got,
         Is.EqualTo(
             Parser.ParsingResult.Ok (
-                Parser.Pair ((Parser.Atom (Parser.Symbol "sym1")),
-                             (Parser.Pair ((Parser.Atom (Parser.Symbol "sym2")),
-                                           (Parser.Pair ((Parser.Atom (Parser.Symbol "sym3")),
-                                                         (Parser.Atom Parser.Nil))))))
+                Parser.Sexpr [Parser.Atom (Parser.Symbol "sym1");
+                              Parser.Atom (Parser.Symbol "sym2");
+                              Parser.Atom (Parser.Symbol "sym3");
+                              Parser.Atom Parser.Nil]
+            )
+        )
+    )
+
+[<Test>]
+let it_should_parse_car_nested_lists () =
+    let got = Parser.Parse (seq {
+        Lexer.ParenL        // ( ( ( sym1 ) sym2 ) sym3 )
+        Lexer.ParenL        // ( ( sym1 ) sym2 )
+        Lexer.ParenL        // ( sym1 )
+        Lexer.Symbol "sym1"
+        Lexer.ParenR
+        Lexer.Symbol "sym2"
+        Lexer.ParenR
+        Lexer.Symbol "sym3"
+        Lexer.ParenR
+        Lexer.EOF
+    })
+    printfn "%s" (Parser.ResultToString got)
+    Assert.That(
+        got,
+        Is.EqualTo(
+            Parser.ParsingResult.Ok (
+                Parser.Sexpr [Parser.Sexpr [Parser.Sexpr [Parser.Atom (Parser.Symbol "sym1");
+                                                          Parser.Atom Parser.Nil];
+                                            Parser.Atom (Parser.Symbol "sym2");
+                                            Parser.Atom Parser.Nil];
+                              Parser.Atom (Parser.Symbol "sym3");
+                              Parser.Atom Parser.Nil]
+            )
+        )
+    )
+
+[<Test>]
+let it_should_parse_cadr_nested_lists () =
+    let got = Parser.Parse (seq {
+        Lexer.ParenL        // ( sym1 ( sym2 ( sym3 ) ) )
+        Lexer.Symbol "sym1"
+        Lexer.ParenL        // ( sym2 ( sym3 ) )
+        Lexer.Symbol "sym2"
+        Lexer.ParenL        // ( sym3 )
+        Lexer.Symbol "sym3"
+        Lexer.ParenR
+        Lexer.ParenR
+        Lexer.ParenR
+        Lexer.EOF
+    })
+    printfn "%s" (Parser.ResultToString got)
+    Assert.That(
+        got,
+        Is.EqualTo(
+            Parser.ParsingResult.Ok (
+                Parser.Sexpr [Parser.Atom (Parser.Symbol "sym1");
+                              Parser.Sexpr [Parser.Atom (Parser.Symbol "sym2");
+                                            Parser.Sexpr [Parser.Atom (Parser.Symbol "sym3");
+                                                          Parser.Atom Parser.Nil];
+                                            Parser.Atom Parser.Nil];
+                              Parser.Atom Parser.Nil]
             )
         )
     )
