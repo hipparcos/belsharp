@@ -37,8 +37,9 @@ module Parser =
         | CollectSexpr of Sexpr
         | PopThenCollectSexpr of Sexpr
         | PushList
-        | PreserveStack
+        | PreserveSexprStack
 
+    /// ParserResult: alias to simplify the following signature.
     and internal ParserResult = Result<SexprAction * ParsingStateAction list, string>
 
     /// Parser: parsing state implementation.
@@ -68,6 +69,7 @@ module Parser =
         | Ok sexpr -> SexprToString sexpr
         | Error err -> err
 
+    // ParserAtom: parse a single atom, not a parsing state.
     let internal ParseAtom = function
         | Lexer.Number n -> Ok (Number n)
         | Lexer.Symbol s when s = "nil" -> Ok Nil
@@ -77,7 +79,7 @@ module Parser =
     // ParseEOF: terminal parsing state.
     let internal ParseEOF tok acc =
         match tok with
-            | Lexer.EOF -> Ok (PreserveStack, [PopState])
+            | Lexer.EOF -> Ok (PreserveSexprStack, [PopState])
             | _ -> Error "trailing objects, EOF expected"
 
     // ParsePairRightParen: parse the right parenthesis of a dotted pair.
@@ -119,7 +121,7 @@ module Parser =
             | Lexer.ParenL -> Ok (PushList, [PushState ParsingList])
             | Lexer.Symbol s when s = "."  ->
                 match acc with
-                    | [ _ ] -> Ok (PreserveStack, [PopState; PushState ParsingPairCDR])
+                    | [ _ ] -> Ok (PreserveSexprStack, [PopState; PushState ParsingPairCDR])
                     | _ -> Ok (CollectSexpr (Atom (Symbol ".")), [KeepState])
             | Lexer.Number _ | Lexer.Symbol _ ->
                 let atom = ParseAtom tok
@@ -130,7 +132,7 @@ module Parser =
     // ParseTopLevel: initial parsing state.
     let internal ParseTopLevel tok acc =
         match tok with
-            | Lexer.EOF -> Ok (PreserveStack, [PopState; PushState ParsingEOF])
+            | Lexer.EOF -> Ok (PreserveSexprStack, [PopState; PushState ParsingEOF])
             | Lexer.ParenR -> Error "unexpected closing parenthesis"
             | Lexer.ParenL -> Ok (PushList, [PushState ParsingList])
             | Lexer.Number _ | Lexer.Symbol _ ->
@@ -138,6 +140,7 @@ module Parser =
                     | Ok a -> Ok (CollectSexpr (Atom a), [PopState; PushState ParsingEOF])
                     | Error err -> Error err
 
+    // ParsingStateToParser: pipe a ParsingState to its Parser.
     let internal ParsingStateToParser (s : ParsingState) : Parser =
         match s with
             | ParsingEOF -> ParseEOF
@@ -146,44 +149,57 @@ module Parser =
             | ParsingPairCDR -> ParsePairCDR
             | ParsingTopLevel -> ParseTopLevel
 
-    // updateParsingStates: apply actions on states.
-    // Allow PushListInPair to return a 2 actions.
-    let rec internal updateParsingStates (actions : ParsingStateAction list) (states : ParsingState list) =
-        if actions.IsEmpty then states
-        else
-            match actions.Head with
-                | KeepState -> updateParsingStates actions.Tail states
-                | PopState -> updateParsingStates actions.Tail states.Tail
-                | PushState s -> updateParsingStates actions.Tail (s::states)
-
-    let internal updateSexprStack (action : SexprAction) (stack : list<Sexpr list>) : list<Sexpr list> =
-        match action with
-            | CollectSexpr sexpr -> (sexpr::stack.Head)::stack.Tail
-            | PopThenCollectSexpr sexpr -> (sexpr::stack.Tail.Head)::stack.Tail.Tail
-            | PushList -> []::stack
-            | PreserveStack -> stack
-
-    // Parse: parse stream of TOKENS, return a Sexpr.
-    // This is a tail recursive function.
-    // It manages the stack of Sexp and the stack of states.
+    /// Parse: parse stream of TOKENS, return a Sexpr.
+    /// This is a tail recursive function.
+    /// TOKENS are parsed one at a time by the current ParsingState.
+    /// A parsing operation may require an operation on a stack of
+    /// Sexpr accumulators and multiple operations on the stack of
+    /// parsing states.
+    /// The depth of the Sexpr accumulator stack represents the level
+    /// of nesting of the current list/pair being parsed.
+    /// Operations on the stack of ParsingStates represents transitions
+    /// between ParsingState. The depth of this stack is linked to the
+    /// level of current nesting of the list/pair being parsed.
     let Parse (tokens : seq<Lexer.Token>) : ParsingResult =
-        let rec loop tokens (states : ParsingState list) (acc : list<Sexpr list>) =
+        // Each time a Parser is called, it can decide what the next
+        // state should be. Multiple operations can be chained as
+        // replacing the current state requires to pop the stack then
+        // to push a new state.
+        let rec updateParsingStateStack (actions : ParsingStateAction list) (states : ParsingState list) =
+            if actions.IsEmpty then states
+            else
+                let action = actions.Head
+                updateParsingStateStack actions.Tail
+                                        (match action with
+                                             | KeepState -> states
+                                             | PopState -> states.Tail
+                                             | PushState s -> s::states)
+        // Each time a Parser is called, it can act on the sexpr accumulator stack.
+        let updateSexprListStack (action : SexprAction) (sexprs : list<Sexpr list>) =
+            match action with
+                | CollectSexpr s -> (s::sexprs.Head)::sexprs.Tail
+                | PopThenCollectSexpr s -> (s::sexprs.Tail.Head)::sexprs.Tail.Tail
+                | PushList -> []::sexprs
+                | PreserveSexprStack -> sexprs
+        // loop is the tail recursive parsing routine.
+        let rec loop tokens (states : ParsingState list) (sexprs : list<Sexpr list>) =
             let state = List.head states
             match state with
-                | ParsingEOF -> Ok(match acc.Head with
-                                         | [] -> Atom Nil
-                                         | l -> l.Head
-                                     )
+                | ParsingEOF ->
+                    Ok(match sexprs.Head with
+                           | [] -> Atom Nil
+                           | l -> l.Head)
                 | _ ->
-                    let parser = ParsingStateToParser state
                     if Seq.isEmpty tokens then Error "unexcepted end of stream"
                     else
+                        let parser = ParsingStateToParser state
                         let tok = Seq.head tokens
-                        match (parser tok acc.Head) with
+                        match (parser tok sexprs.Head) with
                             | Error err -> Error err
                             | Ok (sexprAction, stateActions) ->
                                 loop (Seq.tail tokens)
-                                     (updateParsingStates stateActions states)
-                                     (updateSexprStack sexprAction acc)
+                                     (updateParsingStateStack stateActions states)
+                                     (updateSexprListStack sexprAction sexprs)
+        // Bootstrap parsing starting at top-level at depth 1 with no accumulated sexprs.
         if Seq.isEmpty tokens then Error "empty stream of tokens"
         else loop tokens [ParsingTopLevel; ParsingEOF] [[]]
