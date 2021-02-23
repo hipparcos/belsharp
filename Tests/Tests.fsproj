@@ -16,6 +16,7 @@
   <ItemGroup>
     <Compile Include="LexerTest.fs" />
     <Compile Include="ParserTest.fs" />
+    <Compile Include="PrinterTest.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

@@ -18,21 +18,3 @@ module Lisp =
         | Atom of Atom
         | Pair of Sexpr * Sexpr
         | Sexpr of Sexpr list
-
-    /// AtomToString: for debugging, will be implemented by the printer.
-    let AtomToString = function
-        | Nil -> "nil"
-        | Number n -> string n
-        | Symbol s -> s
-
-    // SexprRoString: for debugging, will be implemented by the printer.
-    let rec SexprToString sexpr =
-        let concat l = String.concat " " (l
-                                          |> List.rev
-                                          |> List.tail
-                                          |> List.rev
-                                          |> List.map SexprToString)
-        match sexpr with
-            | Atom a -> AtomToString a
-            | Pair (car, cdr) -> $"( {SexprToString car} . {SexprToString cdr} )"
-            | Sexpr l -> $"( {concat l} )"

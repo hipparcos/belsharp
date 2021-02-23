@@ -39,7 +39,7 @@ module Parser =
 
     /// ResultToString: for debugging.
     let ResultToString = function
-        | Ok sexpr -> Lisp.SexprToString sexpr
+        | Ok sexpr -> Printer.SexprToString sexpr
         | Error err -> err
 
     // ParserAtom: parse a single atom, not a parsing state.
