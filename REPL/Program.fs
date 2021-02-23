@@ -20,7 +20,7 @@ let tryReadSexpr str : bool * Lisp.Sexpr option =
 let main argv =
     // Exit with code 0 on Ctrl+C.
     Console.CancelKeyPress.Add(
-        fun arg -> printf "\nexit" ; Environment.Exit 0
+        fun arg -> printfn "\nexit" ; Environment.Exit 0
     )
     // R(E)PL 'loop'
     printfn "%s" banner
