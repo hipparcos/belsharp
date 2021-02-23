@@ -1,6 +1,6 @@
-# lsharp
+# Bel#
 
-*lsharp* is an implementation of a subset of the
+*Bel#* (belsharp) is an implementation of a subset of the
 [Bel](http://paulgraham.com/bel.html) programming language in F#.
 
 ## Getting started

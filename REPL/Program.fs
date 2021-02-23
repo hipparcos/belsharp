@@ -2,7 +2,7 @@ open System
 
 open Library
 
-let banner : string = "LSHARP REPL (press Ctrl+C to exit)"
+let banner : string = "BEL# REPL (press Ctrl+C to exit)"
 let prompt : string = "> "
 
 /// read: generate an infinite sequence of prompt.
