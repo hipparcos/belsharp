@@ -16,7 +16,7 @@ let it_should_return_nil () =
     Assert.That(
         got,
         Is.EqualTo(
-            Parser.ParsingResult.Ok(Parser.Atom Parser.Nil)
+            Parser.ParsingResult.Ok(Lisp.Atom Lisp.Nil)
         )
     )
 
@@ -30,7 +30,7 @@ let it_should_parse_number () =
     Assert.That(
         got,
         Is.EqualTo(
-            Parser.ParsingResult.Ok(Parser.Atom (Parser.Number 100))
+            Parser.ParsingResult.Ok(Lisp.Atom (Lisp.Number 100))
         )
     )
 
@@ -44,7 +44,7 @@ let it_should_parse_symbol () =
     Assert.That(
         got,
         Is.EqualTo(
-            Parser.ParsingResult.Ok(Parser.Atom (Parser.Symbol "symbol"))
+            Parser.ParsingResult.Ok(Lisp.Atom (Lisp.Symbol "symbol"))
         )
     )
 
@@ -58,7 +58,7 @@ let it_should_parse_nil_symbol_as_nil () =
     Assert.That(
         got,
         Is.EqualTo(
-            Parser.ParsingResult.Ok(Parser.Atom (Parser.Nil))
+            Parser.ParsingResult.Ok(Lisp.Atom (Lisp.Nil))
         )
     )
 
@@ -73,7 +73,7 @@ let it_should_parse_empty_list_as_nil () =
     Assert.That(
         got,
         Is.EqualTo(
-            Parser.ParsingResult.Ok(Parser.Atom (Parser.Nil))
+            Parser.ParsingResult.Ok(Lisp.Atom (Lisp.Nil))
         )
     )
 
@@ -92,8 +92,8 @@ let it_should_parse_pair () =
         got,
         Is.EqualTo(
             Parser.ParsingResult.Ok(
-                Parser.Pair ((Parser.Atom (Parser.Symbol "symbol1")),
-                             (Parser.Atom (Parser.Symbol "symbol2")))
+                Lisp.Pair ((Lisp.Atom (Lisp.Symbol "symbol1")),
+                           (Lisp.Atom (Lisp.Symbol "symbol2")))
             )
         )
     )
@@ -113,8 +113,8 @@ let it_should_parse_pair_of_dots () =
         got,
         Is.EqualTo(
             Parser.ParsingResult.Ok(
-                Parser.Pair ((Parser.Atom (Parser.Symbol ".")),
-                             (Parser.Atom (Parser.Symbol ".")))
+                Lisp.Pair ((Lisp.Atom (Lisp.Symbol ".")),
+                           (Lisp.Atom (Lisp.Symbol ".")))
             )
         )
     )
@@ -140,10 +140,10 @@ let it_should_parse_cdr_nested_pairs () =
         got,
         Is.EqualTo(
             Parser.ParsingResult.Ok (
-                Parser.Pair ((Parser.Atom (Parser.Symbol "sym1")),
-                             (Parser.Pair ((Parser.Atom (Parser.Symbol "sym2")),
-                                           (Parser.Sexpr [Parser.Atom (Parser.Symbol "sym3");
-                                                          Parser.Atom Parser.Nil]))))
+                Lisp.Pair ((Lisp.Atom (Lisp.Symbol "sym1")),
+                           (Lisp.Pair ((Lisp.Atom (Lisp.Symbol "sym2")),
+                                       (Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym3");
+                                                    Lisp.Atom Lisp.Nil]))))
             )
         )
     )
@@ -163,10 +163,10 @@ let it_should_parse_list () =
         got,
         Is.EqualTo(
             Parser.ParsingResult.Ok (
-                Parser.Sexpr [Parser.Atom (Parser.Symbol "sym1");
-                              Parser.Atom (Parser.Symbol "sym2");
-                              Parser.Atom (Parser.Symbol "sym3");
-                              Parser.Atom Parser.Nil]
+                Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym1");
+                            Lisp.Atom (Lisp.Symbol "sym2");
+                            Lisp.Atom (Lisp.Symbol "sym3");
+                            Lisp.Atom Lisp.Nil]
             )
         )
     )
@@ -190,12 +190,12 @@ let it_should_parse_car_nested_lists () =
         got,
         Is.EqualTo(
             Parser.ParsingResult.Ok (
-                Parser.Sexpr [Parser.Sexpr [Parser.Sexpr [Parser.Atom (Parser.Symbol "sym1");
-                                                          Parser.Atom Parser.Nil];
-                                            Parser.Atom (Parser.Symbol "sym2");
-                                            Parser.Atom Parser.Nil];
-                              Parser.Atom (Parser.Symbol "sym3");
-                              Parser.Atom Parser.Nil]
+                Lisp.Sexpr [Lisp.Sexpr [Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym1");
+                                                    Lisp.Atom Lisp.Nil];
+                                        Lisp.Atom (Lisp.Symbol "sym2");
+                                        Lisp.Atom Lisp.Nil];
+                            Lisp.Atom (Lisp.Symbol "sym3");
+                            Lisp.Atom Lisp.Nil]
             )
         )
     )
@@ -219,12 +219,12 @@ let it_should_parse_cadr_nested_lists () =
         got,
         Is.EqualTo(
             Parser.ParsingResult.Ok (
-                Parser.Sexpr [Parser.Atom (Parser.Symbol "sym1");
-                              Parser.Sexpr [Parser.Atom (Parser.Symbol "sym2");
-                                            Parser.Sexpr [Parser.Atom (Parser.Symbol "sym3");
-                                                          Parser.Atom Parser.Nil];
-                                            Parser.Atom Parser.Nil];
-                              Parser.Atom Parser.Nil]
+                Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym1");
+                            Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym2");
+                                        Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym3");
+                                                    Lisp.Atom Lisp.Nil];
+                                        Lisp.Atom Lisp.Nil];
+                            Lisp.Atom Lisp.Nil]
             )
         )
     )

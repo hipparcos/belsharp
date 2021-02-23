@@ -3,20 +3,9 @@ namespace Library
 open System
 
 // Parser is a tail recursive parser implementation.
-// The public interface is Atom, Sexpr and Parse.
+// The public interface is Parse.
+// The output is a S-expression thus a Lisp data structure.
 module Parser =
-
-    /// Atom: the leaf of the AST.
-    type Atom =
-        | Nil
-        | Number of int
-        | Symbol of string
-
-    /// Sexpr: the nodes of the AST.
-    type Sexpr =
-        | Atom of Atom
-        | Pair of Sexpr * Sexpr
-        | Sexpr of Sexpr list
 
     /// State: the parsing state.
     type internal ParsingState =
@@ -34,8 +23,8 @@ module Parser =
 
     /// SexprAction: operations on the AST.
     type internal SexprAction =
-        | CollectSexpr of Sexpr
-        | PopThenCollectSexpr of Sexpr
+        | CollectSexpr of Lisp.Sexpr
+        | PopThenCollectSexpr of Lisp.Sexpr
         | PushList
         | PreserveSexprStack
 
@@ -43,37 +32,21 @@ module Parser =
     and internal ParserResult = Result<SexprAction * ParsingStateAction list, string>
 
     /// Parser: parsing state implementation.
-    and internal Parser = Lexer.Token -> Sexpr list -> ParserResult
+    and internal Parser = Lexer.Token -> Lisp.Sexpr list -> ParserResult
 
     /// ParsingResult: result of Parse, used to explicitly cast in tests.
-    type ParsingResult = Result<Sexpr, string>
+    type ParsingResult = Result<Lisp.Sexpr, string>
 
-    let AtomToString = function
-        | Nil -> "nil"
-        | Number n -> string n
-        | Symbol s -> s
-
-    // SexprRoString: for debugging, will be implemented by the printer.
-    let rec SexprToString sexpr =
-        let concat l = String.concat " " (l
-                                          |> List.rev
-                                          |> List.tail
-                                          |> List.rev
-                                          |> List.map SexprToString)
-        match sexpr with
-            | Atom a -> AtomToString a
-            | Pair (car, cdr) -> $"( {SexprToString car} . {SexprToString cdr} )"
-            | Sexpr l -> $"( {concat l} )"
-
+    /// ResultToString: for debugging.
     let ResultToString = function
-        | Ok sexpr -> SexprToString sexpr
+        | Ok sexpr -> Lisp.SexprToString sexpr
         | Error err -> err
 
     // ParserAtom: parse a single atom, not a parsing state.
     let internal ParseAtom = function
-        | Lexer.Number n -> Ok (Number n)
-        | Lexer.Symbol s when s = "nil" -> Ok Nil
-        | Lexer.Symbol s -> Ok (Symbol s)
+        | Lexer.Number n -> Ok (Lisp.Number n)
+        | Lexer.Symbol s when s = "nil" -> Ok Lisp.Nil
+        | Lexer.Symbol s -> Ok (Lisp.Symbol s)
         | _ -> Error "not an atom"
 
     // ParseEOF: terminal parsing state.
@@ -90,7 +63,7 @@ module Parser =
             | Lexer.ParenL -> Ok (PushList, [PushState ParsingList])
             | Lexer.ParenR ->
                 match acc with
-                    | [f; s] -> Ok (PopThenCollectSexpr (Pair (s, f)), [PopState])
+                    | [f; s] -> Ok (PopThenCollectSexpr (Lisp.Pair (s, f)), [PopState])
                     | _ -> Error "malformed pair"
             | _ -> Error "trailing object in pair"
 
@@ -101,12 +74,14 @@ module Parser =
             | Lexer.EOF -> Error "unclosed pair"
             | Lexer.ParenR -> Error "malformed pair"
             | Lexer.ParenL ->
-                Ok (PushList, [PopState; PushState ParsingPairRightParen; PushState ParsingList])
+                Ok (PushList,
+                    [PopState; PushState ParsingPairRightParen; PushState ParsingList])
             | Lexer.Number _ | Lexer.Symbol _ ->
                 let atom = ParseAtom tok
                 match atom with
                     | Ok a ->
-                        Ok (CollectSexpr (Atom a), [PopState; PushState ParsingPairRightParen])
+                        Ok (CollectSexpr (Lisp.Atom a),
+                            [PopState; PushState ParsingPairRightParen])
                     | Error err -> Error err
 
     // ParseList: parse a proper list, may transition to ParsePairCDR.
@@ -116,17 +91,17 @@ module Parser =
             | Lexer.EOF -> Error "unclosed pair"
             | Lexer.ParenR ->
                 match acc with
-                    | [] -> Ok (PopThenCollectSexpr (Atom Nil), [PopState])
-                    | _ -> Ok (PopThenCollectSexpr (Sexpr (List.rev ((Atom Nil)::acc))), [PopState])
+                    | [] -> Ok (PopThenCollectSexpr (Lisp.Atom Lisp.Nil), [PopState])
+                    | _ -> Ok (PopThenCollectSexpr (Lisp.Sexpr (List.rev ((Lisp.Atom Lisp.Nil)::acc))), [PopState])
             | Lexer.ParenL -> Ok (PushList, [PushState ParsingList])
             | Lexer.Symbol s when s = "."  ->
                 match acc with
                     | [ _ ] -> Ok (PreserveSexprStack, [PopState; PushState ParsingPairCDR])
-                    | _ -> Ok (CollectSexpr (Atom (Symbol ".")), [KeepState])
+                    | _ -> Ok (CollectSexpr (Lisp.Atom (Lisp.Symbol ".")), [KeepState])
             | Lexer.Number _ | Lexer.Symbol _ ->
                 let atom = ParseAtom tok
                 match atom with
-                    | Ok a -> Ok (CollectSexpr (Atom a), [KeepState])
+                    | Ok a -> Ok (CollectSexpr (Lisp.Atom a), [KeepState])
                     | Error err -> Error err
 
     // ParseTopLevel: initial parsing state.
@@ -137,7 +112,7 @@ module Parser =
             | Lexer.ParenL -> Ok (PushList, [PushState ParsingList])
             | Lexer.Number _ | Lexer.Symbol _ ->
                 match (ParseAtom tok) with
-                    | Ok a -> Ok (CollectSexpr (Atom a), [PopState; PushState ParsingEOF])
+                    | Ok a -> Ok (CollectSexpr (Lisp.Atom a), [PopState; PushState ParsingEOF])
                     | Error err -> Error err
 
     // ParsingStateToParser: pipe a ParsingState to its Parser.
@@ -175,19 +150,19 @@ module Parser =
                                              | PopState -> states.Tail
                                              | PushState s -> s::states)
         // Each time a Parser is called, it can act on the sexpr accumulator stack.
-        let updateSexprListStack (action : SexprAction) (sexprs : list<Sexpr list>) =
+        let updateSexprListStack (action : SexprAction) (sexprs : list<Lisp.Sexpr list>) =
             match action with
                 | CollectSexpr s -> (s::sexprs.Head)::sexprs.Tail
                 | PopThenCollectSexpr s -> (s::sexprs.Tail.Head)::sexprs.Tail.Tail
                 | PushList -> []::sexprs
                 | PreserveSexprStack -> sexprs
         // loop is the tail recursive parsing routine.
-        let rec loop tokens (states : ParsingState list) (sexprs : list<Sexpr list>) =
+        let rec loop tokens (states : ParsingState list) (sexprs : list<Lisp.Sexpr list>) =
             let state = List.head states
             match state with
                 | ParsingEOF ->
                     Ok(match sexprs.Head with
-                           | [] -> Atom Nil
+                           | [] -> Lisp.Atom Lisp.Nil
                            | l -> l.Head)
                 | _ ->
                     if Seq.isEmpty tokens then Error "unexcepted end of stream"
