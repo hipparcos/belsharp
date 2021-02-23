@@ -1,13 +1,31 @@
-// Learn more about F# at http://docs.microsoft.com/dotnet/fsharp
-
 open System
 
-// Define a function to construct a message to print
-let from whom =
-    sprintf "from %s" whom
+open Library
+
+let banner : string = "LSHARP REPL (press Ctrl+C to exit)"
+let prompt : string = "> "
+
+/// read: generate an infinite sequence of prompt.
+let read (prompt : string) parser =
+    Seq.initInfinite (fun _ -> printf "%s" prompt ; Console.ReadLine())
+    |> Seq.choose (parser >> function true, v -> Some v | _ -> None)
+
+/// tryReadSexpr: a Sexpr parser that uses the Reader from Library.
+let tryReadSexpr str : bool * Lisp.Sexpr option =
+    match (Reader.Read str) with
+        | Ok sexpr -> true, Some sexpr
+        | Error err -> printfn "%s" err ; false, None
 
 [<EntryPoint>]
 let main argv =
-    let message = from "F#" // Call the function
-    printfn "Hello world %s" message
-    0 // return an integer exit code
+    // Exit with code 0 on Ctrl+C.
+    Console.CancelKeyPress.Add(
+        fun arg -> printf "\nexit" ; Environment.Exit 0
+    )
+    // R(E)PL 'loop'
+    printfn "%s" banner
+    for sexpr in (read prompt tryReadSexpr) do
+        match sexpr with
+            | Some sexpr -> sexpr |> Printer.Print |> printfn "%s"
+            | None -> ()
+    0
