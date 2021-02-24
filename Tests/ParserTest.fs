@@ -142,8 +142,7 @@ let it_should_parse_cdr_nested_pairs () =
             Parser.ParsingResult.Ok (
                 Lisp.Pair ((Lisp.Atom (Lisp.Symbol "sym1")),
                            (Lisp.Pair ((Lisp.Atom (Lisp.Symbol "sym2")),
-                                       (Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym3");
-                                                    Lisp.Atom Lisp.Nil]))))
+                                       (Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym3")]))))
             )
         )
     )
@@ -165,8 +164,7 @@ let it_should_parse_list () =
             Parser.ParsingResult.Ok (
                 Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym1");
                             Lisp.Atom (Lisp.Symbol "sym2");
-                            Lisp.Atom (Lisp.Symbol "sym3");
-                            Lisp.Atom Lisp.Nil]
+                            Lisp.Atom (Lisp.Symbol "sym3")]
             )
         )
     )
@@ -190,12 +188,9 @@ let it_should_parse_car_nested_lists () =
         got,
         Is.EqualTo(
             Parser.ParsingResult.Ok (
-                Lisp.Sexpr [Lisp.Sexpr [Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym1");
-                                                    Lisp.Atom Lisp.Nil];
-                                        Lisp.Atom (Lisp.Symbol "sym2");
-                                        Lisp.Atom Lisp.Nil];
-                            Lisp.Atom (Lisp.Symbol "sym3");
-                            Lisp.Atom Lisp.Nil]
+                Lisp.Sexpr [Lisp.Sexpr [Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym1")];
+                                        Lisp.Atom (Lisp.Symbol "sym2")];
+                            Lisp.Atom (Lisp.Symbol "sym3")]
             )
         )
     )
@@ -221,10 +216,7 @@ let it_should_parse_cadr_nested_lists () =
             Parser.ParsingResult.Ok (
                 Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym1");
                             Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym2");
-                                        Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym3");
-                                                    Lisp.Atom Lisp.Nil];
-                                        Lisp.Atom Lisp.Nil];
-                            Lisp.Atom Lisp.Nil]
+                                        Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym3")]]]
             )
         )
     )

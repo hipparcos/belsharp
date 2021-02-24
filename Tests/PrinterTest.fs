@@ -31,7 +31,7 @@ let it_should_print_symbol () =
 [<Test>]
 let it_should_print_empty_list_as_nil () =
     Assert.That(
-        Printer.Print (Lisp.Sexpr [Lisp.Atom Lisp.Nil]),
+        Printer.Print (Lisp.Sexpr []),
         Is.EqualTo("nil")
     )
 
@@ -51,8 +51,7 @@ let it_should_print_cdr_nested_pairs () =
         Printer.Print (
             Lisp.Pair ((Lisp.Atom (Lisp.Symbol "sym1")),
                        (Lisp.Pair ((Lisp.Atom (Lisp.Symbol "sym2")),
-                                   (Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym3");
-                                                Lisp.Atom Lisp.Nil]))))
+                                   (Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym3")]))))
         ),
         Is.EqualTo("(sym1 . (sym2 . (sym3)))")
     )
@@ -63,22 +62,25 @@ let it_should_print_list () =
         Printer.Print (
             Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym1");
                         Lisp.Atom (Lisp.Symbol "sym2");
-                        Lisp.Atom (Lisp.Symbol "sym3");
-                        Lisp.Atom Lisp.Nil]
+                        Lisp.Atom (Lisp.Symbol "sym3")]
         ),
         Is.EqualTo("(sym1 sym2 sym3)")
+    )
+
+[<Test>]
+let it_should_print_list_of_a_nil () =
+    Assert.That(
+        Printer.Print (Lisp.Sexpr [Lisp.Atom Lisp.Nil]),
+        Is.EqualTo("(nil)")
     )
 
 [<Test>]
 let it_should_print_car_nested_lists () =
     Assert.That(
         Printer.Print (
-            Lisp.Sexpr [Lisp.Sexpr [Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym1");
-                                                Lisp.Atom Lisp.Nil];
-                                    Lisp.Atom (Lisp.Symbol "sym2");
-                                    Lisp.Atom Lisp.Nil];
-                        Lisp.Atom (Lisp.Symbol "sym3");
-                        Lisp.Atom Lisp.Nil]
+            Lisp.Sexpr [Lisp.Sexpr [Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym1")];
+                                    Lisp.Atom (Lisp.Symbol "sym2")];
+                        Lisp.Atom (Lisp.Symbol "sym3")]
         ),
         Is.EqualTo("(((sym1) sym2) sym3)")
     )
@@ -89,10 +91,7 @@ let it_should_print_cadr_nested_lists () =
         Printer.Print (
             Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym1");
                         Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym2");
-                                    Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym3");
-                                                Lisp.Atom Lisp.Nil];
-                                    Lisp.Atom Lisp.Nil];
-                        Lisp.Atom Lisp.Nil]
+                                    Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym3")]]]
         ),
         Is.EqualTo("(sym1 (sym2 (sym3)))")
     )

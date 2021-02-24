@@ -26,7 +26,7 @@ module Printer =
                  PrintingChar " . ";
                  PrintingSexpr cdr;
                  PrintingChar ")"]
-            | Lisp.Sexpr [Lisp.Atom Lisp.Nil] | Lisp.Sexpr [] ->
+            | Lisp.Sexpr [] ->
                 [PrintingAtom Lisp.Nil]
             | Lisp.Sexpr list ->
                 [PrintingChar "(";
@@ -46,9 +46,9 @@ module Printer =
                     | PrintingChar s ->
                         builder.Append(s) |> ignore
                         loop ops.Tail
-                    | PrintingList [Lisp.Atom Lisp.Nil] | PrintingList [] ->
+                    | PrintingList [] ->
                         loop ops.Tail
-                    | PrintingList [car; Lisp.Atom Lisp.Nil] ->
+                    | PrintingList [car] ->
                         loop (List.append (generatePrintingOps car)
                                           (ops.Tail))
                     | PrintingList (car::cdr) ->

@@ -92,7 +92,7 @@ module Parser =
             | Lexer.ParenR ->
                 match acc with
                     | [] -> Ok (PopThenCollectSexpr (Lisp.Atom Lisp.Nil), [PopState])
-                    | _ -> Ok (PopThenCollectSexpr (Lisp.Sexpr (List.rev ((Lisp.Atom Lisp.Nil)::acc))), [PopState])
+                    | _ -> Ok (PopThenCollectSexpr (Lisp.Sexpr (List.rev acc)), [PopState])
             | Lexer.ParenL -> Ok (PushList, [PushState ParsingList])
             | Lexer.Symbol s when s = "."  ->
                 match acc with
