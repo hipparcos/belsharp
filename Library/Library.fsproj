@@ -10,6 +10,9 @@
     <Compile Include="Printer.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="Reader.fs" />
+    <Compile Include="Primitives.fs" />
+    <Compile Include="SpecialForms.fs" />
+    <Compile Include="Evaluator.fs" />
   </ItemGroup>
 
 </Project>

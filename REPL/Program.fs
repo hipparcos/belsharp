@@ -22,10 +22,13 @@ let main argv =
     Console.CancelKeyPress.Add(
         fun arg -> printfn "\nexit" ; Environment.Exit 0
     )
-    // R(E)PL 'loop'
+    // REPL 'loop'
     printfn "%s" banner
     for sexpr in (read prompt tryReadSexpr) do
         match sexpr with
-            | Some sexpr -> sexpr |> Printer.Print |> printfn "%s"
+            | Some sexpr -> sexpr
+                            |> Evaluator.Eval Evaluator.DefaultScope
+                            |> Printer.Print
+                            |> printfn "%s"
             | None -> ()
     0
