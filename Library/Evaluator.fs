@@ -69,6 +69,10 @@ module Evaluator =
                         | _ -> Lisp.Error "eval called on an empty stack"
                 | Some (Lisp.EvalSexpr sexpr) ->
                     match sexpr with
+                        | Lisp.Atom (Lisp.Symbol "globe") ->
+                            context.PushInstr (Lisp.EvalSpecialForm (SpecialForms.globe, 0)) |> ignore
+                        | Lisp.Atom (Lisp.Symbol "scope") ->
+                            context.PushInstr (Lisp.EvalSpecialForm (SpecialForms.scope, 0)) |> ignore
                         | Lisp.Atom (Lisp.Symbol s) ->
                             context.PushData(lookup s context.Scope) |> ignore
                         | Lisp.Pair (car, cdr) ->

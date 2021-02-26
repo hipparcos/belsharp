@@ -64,7 +64,7 @@ module Printer =
         match value with
             | Lisp.Value.Sexpr s -> SexprToString s
             | Lisp.Primitive p -> $"primitive<{p}>"
-            | Lisp.SpecialForm f -> $"specialform<{f}>"
+            | Lisp.SpecialForm f -> $"special-form<{f}>"
             | Lisp.Error err -> $"Error: {err}"
 
     let Print (sexpr : Lisp.Value) : string =
