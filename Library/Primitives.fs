@@ -8,11 +8,12 @@ open System
 module Primitives =
 
     /// add: add numbers.
-    let add (stack : Lisp.ValueStack) (nargs : int) : Lisp.ValueStack =
-        let args, rest = List.splitAt nargs stack
-        let sum = args
-                  |> List.map (fun s -> match s with
-                                            | Lisp.Value.Sexpr (Lisp.Atom (Lisp.Number n)) -> n
-                                            | _ -> 0)
-                  |> List.sum
-        (Lisp.Value.Sexpr (Lisp.Atom (Lisp.Number sum)))::rest
+    let add (args : Lisp.Value list) (nargs : int) : Lisp.Value =
+        args
+        |> List.map (fun s -> match s with
+                                  | Lisp.Value.Sexpr (Lisp.Atom (Lisp.Number n)) -> n
+                                  | _ -> 0)
+        |> List.sum
+        |> Lisp.Number
+        |> Lisp.Atom
+        |> Lisp.Value.Sexpr

@@ -44,7 +44,7 @@ module Lisp =
     /// Primitive: functions that evaluate as per function evaluation
     /// rules (left to right, depth first) but can not be defined in
     /// Bel itself.
-    and Primitive = Value list -> int -> Value list
+    and Primitive = Value list -> int -> Value
 
     /// ValueStack: a stack of Values.
     and ValueStack = Value list

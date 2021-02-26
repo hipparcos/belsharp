@@ -32,6 +32,11 @@ module Evaluator =
                                      | Some sexpr -> sexpr
                                      | None -> Lisp.Value.Sexpr (Lisp.Atom Lisp.Nil)
 
+    let internal evalPrimitive (prim : Lisp.Primitive) (stack : Lisp.ValueStack) (nargs : int) : Lisp.ValueStack =
+        let (args, rest) = List.splitAt nargs stack
+        let result = prim args nargs
+        result::rest
+
     /// Eval: eval SEXPR in SCOPE.
     /// Use stacks of instructions and values to be tail recursive.
     let Eval (scope : Lisp.Scope) (sexpr : Lisp.Sexpr) : Lisp.Value =
@@ -45,7 +50,7 @@ module Evaluator =
                     form context nargs
                     loop context
                 | Some (Lisp.EvalPrimitive (prim, nargs)) ->
-                    context.Data <- prim context.Data nargs
+                    context.Data <- evalPrimitive prim context.Data nargs
                     loop context
                 | Some (Lisp.EvalTop nargs) ->
                     let instr = context.PopData()
