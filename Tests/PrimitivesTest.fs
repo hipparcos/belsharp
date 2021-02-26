@@ -25,4 +25,24 @@ let tests =
                 | Lisp.Value.Sexpr got ->
                     Expect.equal got want "the sum should be 6"
                 | e -> failtestf "fail: got %A" e
+
+        testCase "it should return the product neutral elemment" <| fun _ ->
+            let inp = []
+            let got = Primitives.mul inp 0
+            let want = Lisp.Atom (Lisp.Number 1)
+            match got with
+                | Lisp.Value.Sexpr got ->
+                    Expect.equal got want "the product should be 1"
+                | e -> failtestf "fail: got %A" e
+
+        testCase "it should return the product" <| fun _ ->
+            let inp = [Lisp.Value.Sexpr (Lisp.Atom (Lisp.Number 1));
+                       Lisp.Value.Sexpr (Lisp.Atom (Lisp.Number 2));
+                       Lisp.Value.Sexpr (Lisp.Atom (Lisp.Number 4))]
+            let got = Primitives.mul inp 3
+            let want = Lisp.Atom (Lisp.Number 8)
+            match got with
+                | Lisp.Value.Sexpr got ->
+                    Expect.equal got want "the product should be 8"
+                | e -> failtestf "fail: got %A" e
     ]

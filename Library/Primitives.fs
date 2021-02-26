@@ -17,3 +17,14 @@ module Primitives =
         |> Lisp.Number
         |> Lisp.Atom
         |> Lisp.Value.Sexpr
+
+    /// mul: multiply numbers.
+    let mul (args : Lisp.Value list) (nargs : int) : Lisp.Value =
+        args
+        |> List.map (fun s -> match s with
+                                  | Lisp.Value.Sexpr (Lisp.Atom (Lisp.Number n)) -> n
+                                  | _ -> 1)
+        |> List.fold (fun acc it -> acc * it) 1
+        |> Lisp.Number
+        |> Lisp.Atom
+        |> Lisp.Value.Sexpr

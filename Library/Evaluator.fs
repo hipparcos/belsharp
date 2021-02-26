@@ -11,6 +11,7 @@ module Evaluator =
         { Lisp.Dynamic = Map.empty
           Lisp.Global = Map.empty.
               Add("+", Lisp.Primitive Primitives.add).
+              Add("*", Lisp.Primitive Primitives.mul).
               Add("quote", Lisp.SpecialForm SpecialForms.quote);
           Lisp.Lexical = Map.empty }
 

@@ -18,6 +18,31 @@ let tests =
                     Expect.equal got want "the sum should be 6"
                 | e -> failtestf "fail: got %A" e
 
+        testCase "it should eval product" <| fun _ ->
+            let inp = Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "*");
+                                  Lisp.Atom (Lisp.Number 1);
+                                  Lisp.Atom (Lisp.Number 2);
+                                  Lisp.Atom (Lisp.Number 4)]
+            let got = Evaluator.Eval Evaluator.DefaultScope (inp)
+            let want = Lisp.Atom (Lisp.Number 8)
+            match got with
+                | Lisp.Value.Sexpr got ->
+                    Expect.equal got want "the product should be 8"
+                | e -> failtestf "fail: got %A" e
+
+        testCase "it should eval nested expressions" <| fun _ ->
+            let inp = Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "*");
+                                  Lisp.Atom (Lisp.Number 10);
+                                  Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "+");
+                                              Lisp.Atom (Lisp.Number 1);
+                                              Lisp.Atom (Lisp.Number 2)]]
+            let got = Evaluator.Eval Evaluator.DefaultScope (inp)
+            let want = Lisp.Atom (Lisp.Number 30)
+            match got with
+                | Lisp.Value.Sexpr got ->
+                    Expect.equal got want "the sum should be 30"
+                | e -> failtestf "fail: got %A" e
+
         testCase "it should eval quote" <| fun _ ->
             let inp = Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "quote");
                                   Lisp.Sexpr [Lisp.Atom (Lisp.Number 1);
