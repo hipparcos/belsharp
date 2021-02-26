@@ -10,6 +10,7 @@
     <Compile Include="EvaluatorTest.fs" />
     <Compile Include="LexerTest.fs" />
     <Compile Include="ParserTest.fs" />
+    <Compile Include="PrimitivesTest.fs" />
     <Compile Include="PrinterTest.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

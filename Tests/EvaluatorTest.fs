@@ -6,7 +6,7 @@ open Library
 [<Tests>]
 let tests =
     testList "Evaluator" [
-        testCase "it should eval addition" <| fun _ ->
+        testCase "it should eval sum" <| fun _ ->
             let inp = Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "+");
                                   Lisp.Atom (Lisp.Number 1);
                                   Lisp.Atom (Lisp.Number 2);
