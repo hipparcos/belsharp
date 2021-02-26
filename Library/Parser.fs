@@ -34,9 +34,6 @@ module Parser =
     /// Parser: parsing state implementation.
     and internal Parser = Lexer.Token -> Lisp.Sexpr list -> ParserResult
 
-    /// ParsingResult: result of Parse, used to explicitly cast in tests.
-    type ParsingResult = Result<Lisp.Sexpr, string>
-
     /// ResultToString: for debugging.
     let ResultToString = function
         | Ok sexpr -> Printer.SexprToString sexpr
@@ -135,7 +132,7 @@ module Parser =
     /// Operations on the stack of ParsingStates represents transitions
     /// between ParsingState. The depth of this stack is linked to the
     /// level of current nesting of the list/pair being parsed.
-    let Parse (tokens : seq<Lexer.Token>) : ParsingResult =
+    let Parse (tokens : seq<Lexer.Token>) : Result<Lisp.Sexpr, string> =
         // Each time a Parser is called, it can decide what the next
         // state should be. Multiple operations can be chained as
         // replacing the current state requires to pop the stack then

@@ -1,65 +1,61 @@
 module Tests.Lexer
 
+open Expecto
 open Library
-open NUnit.Framework
 
-[<SetUp>]
-let Setup () =
-    ()
+[<Tests>]
+let tests =
+    testList "Lexer" [
+        testCase "it should accept empty input" <| fun _ ->
+            let inp = ""
+            let got = Lexer.Lex inp
+            let want = seq { Lexer.EOF }
+            Expect.sequenceEqual got want
+                "empty input should return EOF"
 
-[<Test>]
-let it_should_accept_empty_input () =
-    Assert.That(
-        Lexer.Lex "",
-        Is.EqualTo(seq {
-            Lexer.EOF
-        })
-    )
+        testCase "it should skip whitespaces" <| fun _ ->
+            let inp = "  \t\n\r\v"
+            let got = Lexer.Lex inp
+            let want = seq { Lexer.EOF }
+            Expect.sequenceEqual got want
+                "white spaces should return EOF"
 
-[<Test>]
-let it_should_skip_whitespaces () =
-    Assert.That(
-        Lexer.Lex "  \t\n\r\v",
-        Is.EqualTo(seq {
-            Lexer.EOF
-        })
-    )
+        testCase "it should lex numbers" <| fun _ ->
+            let inp = "1 10 100"
+            let got = Lexer.Lex inp
+            let want = seq {
+                Lexer.Number 1;
+                Lexer.Number 10;
+                Lexer.Number 100;
+                Lexer.EOF
+            }
+            Expect.sequenceEqual got want
+                "it should lex some numbers"
 
-[<Test>]
-let it_should_lex_numbers () =
-    Assert.That(
-        Lexer.Lex "1 10 100",
-        Is.EqualTo(seq {
-            Lexer.Number 1;
-            Lexer.Number 10;
-            Lexer.Number 100;
-            Lexer.EOF
-        })
-    )
+        testCase "it should lex symbols" <| fun _ ->
+            let inp = "+ symbol i-am-a-symbol symbol0"
+            let got = Lexer.Lex inp
+            let want = seq {
+                Lexer.Symbol "+";
+                Lexer.Symbol "symbol";
+                Lexer.Symbol "i-am-a-symbol";
+                Lexer.Symbol "symbol0";
+                Lexer.EOF
+            }
+            Expect.sequenceEqual got want
+                "it should lex some symbols"
 
-[<Test>]
-let it_should_lex_symbols () =
-    Assert.That(
-        Lexer.Lex "+ symbol i-am-a-symbol symbol0",
-        Is.EqualTo(seq {
-            Lexer.Symbol "+";
-            Lexer.Symbol "symbol";
-            Lexer.Symbol "i-am-a-symbol";
-            Lexer.Symbol "symbol0";
-            Lexer.EOF
-        })
-    )
-
-[<Test>]
-let it_should_lex_parenthesis () =
-    Assert.That(
-        Lexer.Lex "())()",
-        Is.EqualTo(seq {
-            Lexer.ParenL
-            Lexer.ParenR
-            Lexer.ParenR
-            Lexer.ParenL
-            Lexer.ParenR
-            Lexer.EOF
-        })
-    )
+        testCase "it should lex parenthesis" <| fun _ ->
+            let inp = "())()"
+            let got = Lexer.Lex inp
+            let want = seq {
+                Lexer.ParenL
+                Lexer.ParenR
+                Lexer.ParenR
+                Lexer.ParenL
+                Lexer.ParenR
+                Lexer.EOF
+            }
+            Expect.sequenceEqual got want
+                "it should lex some parenthesis"
+    ]

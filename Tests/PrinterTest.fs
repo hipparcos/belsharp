@@ -1,102 +1,87 @@
 module Tests.Printer
 
+open Expecto
 open Library
-open NUnit.Framework
 
-[<SetUp>]
-let Setup () =
-    ()
+[<Tests>]
+let tests =
+    testList "Lexer" [
+        testCase "it should print nil" <| fun _ ->
+            let inp = Lisp.Value.Sexpr (Lisp.Atom Lisp.Nil)
+            let got = Printer.Print(inp)
+            Expect.equal got "nil"
+                "nil atom should be printed as nil"
 
-[<Test>]
-let it_should_print_nil () =
-    Assert.That(
-        Printer.Print(Lisp.Value.Sexpr (Lisp.Atom Lisp.Nil)),
-        Is.EqualTo("nil")
-    )
+        testCase "it should print empty list" <| fun _ ->
+            let inp = Lisp.Value.Sexpr (Lisp.Sexpr [])
+            let got = Printer.Print(inp)
+            Expect.equal got "nil"
+                "empty list should be printed as nil"
 
-[<Test>]
-let it_should_print_number () =
-    Assert.That(
-        Printer.Print (Lisp.Value.Sexpr (Lisp.Atom (Lisp.Number 100))),
-        Is.EqualTo("100")
-    )
+        testCase "it should print number" <| fun _ ->
+            let inp = Lisp.Value.Sexpr (Lisp.Atom (Lisp.Number 100))
+            let got = Printer.Print(inp)
+            Expect.equal got "100"
+                "100 atom should be printed as 100"
 
-[<Test>]
-let it_should_print_symbol () =
-    Assert.That(
-        Printer.Print (Lisp.Value.Sexpr (Lisp.Atom (Lisp.Symbol "symbol"))),
-        Is.EqualTo("symbol")
-    )
+        testCase "it should print symbol" <| fun _ ->
+            let inp = Lisp.Value.Sexpr (Lisp.Atom (Lisp.Symbol "symbol"))
+            let got = Printer.Print(inp)
+            Expect.equal got "symbol"
+                "symbol atom should be printed as symbol"
 
-[<Test>]
-let it_should_print_empty_list_as_nil () =
-    Assert.That(
-        Printer.Print (Lisp.Value.Sexpr (Lisp.Sexpr [])),
-        Is.EqualTo("nil")
-    )
+        testCase "it should print pair" <| fun _ ->
+            let inp =
+                Lisp.Value.Sexpr (
+                    Lisp.Pair ((Lisp.Atom (Lisp.Symbol "symbol1")),
+                               (Lisp.Atom (Lisp.Symbol "symbol2"))))
+            let got = Printer.Print(inp)
+            Expect.equal got "(symbol1 . symbol2)"
+                "pair should be printed as dotted pair"
 
-[<Test>]
-let it_should_print_pair () =
-    Assert.That(
-        Printer.Print (
-            Lisp.Value.Sexpr (
-                Lisp.Pair ((Lisp.Atom (Lisp.Symbol "symbol1")),
-                           (Lisp.Atom (Lisp.Symbol "symbol2")))
-        )),
-        Is.EqualTo("(symbol1 . symbol2)")
-    )
+        testCase "it should print nested pairs" <| fun _ ->
+            let inp =
+                Lisp.Value.Sexpr (
+                    Lisp.Pair ((Lisp.Atom (Lisp.Symbol "sym1")),
+                               (Lisp.Pair ((Lisp.Atom (Lisp.Symbol "sym2")),
+                                           (Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym3")])))))
+            let got = Printer.Print(inp)
+            Expect.equal got "(sym1 . (sym2 . (sym3)))"
+                "nested pairs should be printed as dotted pairs"
 
-[<Test>]
-let it_should_print_cdr_nested_pairs () =
-    Assert.That(
-        Printer.Print (
-            Lisp.Value.Sexpr (
-                Lisp.Pair ((Lisp.Atom (Lisp.Symbol "sym1")),
-                           (Lisp.Pair ((Lisp.Atom (Lisp.Symbol "sym2")),
-                                       (Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym3")]))))
-        )),
-        Is.EqualTo("(sym1 . (sym2 . (sym3)))")
-    )
+        testCase "it should print list" <| fun _ ->
+            let inp =
+                Lisp.Value.Sexpr (
+                    Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym1");
+                                Lisp.Atom (Lisp.Symbol "sym2");
+                                Lisp.Atom (Lisp.Symbol "sym3")])
+            let got = Printer.Print(inp)
+            Expect.equal got "(sym1 sym2 sym3)"
+                "list should be printed as list"
 
-[<Test>]
-let it_should_print_list () =
-    Assert.That(
-        Printer.Print (
-            Lisp.Value.Sexpr (
-                Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym1");
-                            Lisp.Atom (Lisp.Symbol "sym2");
-                            Lisp.Atom (Lisp.Symbol "sym3")]
-        )),
-        Is.EqualTo("(sym1 sym2 sym3)")
-    )
+        testCase "it should print list of nil" <| fun _ ->
+            let inp = Lisp.Value.Sexpr (Lisp.Sexpr [Lisp.Atom Lisp.Nil])
+            let got = Printer.Print(inp)
+            Expect.equal got "(nil)"
+                "list of nil atom should be printed as list of nil"
 
-[<Test>]
-let it_should_print_list_of_a_nil () =
-    Assert.That(
-        Printer.Print (Lisp.Value.Sexpr (Lisp.Sexpr [Lisp.Atom Lisp.Nil])),
-        Is.EqualTo("(nil)")
-    )
+        testCase "it should print car nested lists" <| fun _ ->
+            let inp =
+                Lisp.Value.Sexpr (
+                    Lisp.Sexpr [Lisp.Sexpr [Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym1")];
+                                            Lisp.Atom (Lisp.Symbol "sym2")];
+                                Lisp.Atom (Lisp.Symbol "sym3")])
+            let got = Printer.Print(inp)
+            Expect.equal got "(((sym1) sym2) sym3)"
+                "car nested list should print as list"
 
-[<Test>]
-let it_should_print_car_nested_lists () =
-    Assert.That(
-        Printer.Print (
-            Lisp.Value.Sexpr (
-                Lisp.Sexpr [Lisp.Sexpr [Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym1")];
-                                        Lisp.Atom (Lisp.Symbol "sym2")];
-                            Lisp.Atom (Lisp.Symbol "sym3")]
-        )),
-        Is.EqualTo("(((sym1) sym2) sym3)")
-    )
-
-[<Test>]
-let it_should_print_cadr_nested_lists () =
-    Assert.That(
-        Printer.Print (
-            Lisp.Value.Sexpr (
-                Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym1");
-                            Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym2");
-                                        Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym3")]]]
-        )),
-        Is.EqualTo("(sym1 (sym2 (sym3)))")
-    )
+        testCase "it should print cadr nested lists" <| fun _ ->
+            let inp =
+                Lisp.Value.Sexpr (
+                    Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym1");
+                                Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym2");
+                                            Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym3")]]])
+            let got = Printer.Print(inp)
+            Expect.equal got "(sym1 (sym2 (sym3)))"
+                "cadr nested list should print as list"
+    ]
