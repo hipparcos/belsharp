@@ -45,4 +45,65 @@ let tests =
                 | Lisp.Value.Sexpr got ->
                     Expect.equal got want "the product should be 8"
                 | e -> failtestf "fail: got %A" e
+
+        testCase "it should return the car of a list" <| fun _ ->
+            let inp = [Lisp.Value.Sexpr (Lisp.Sexpr [Lisp.Atom (Lisp.Number 1);
+                                                     Lisp.Atom (Lisp.Number 2);
+                                                     Lisp.Atom (Lisp.Number 3)])]
+            let got = Primitives.car inp 1
+            let want = Lisp.Atom (Lisp.Number 1)
+            match got with
+                | Lisp.Value.Sexpr got ->
+                    Expect.equal got want "the prod should be 8"
+                | e -> failtestf "fail: got %A" e
+
+        testCase "it should return the car of an empty list" <| fun _ ->
+            let inp = [Lisp.Value.Sexpr (Lisp.Sexpr [])]
+            let got = Primitives.car inp 1
+            let want = Lisp.Atom Lisp.Nil
+            match got with
+                | Lisp.Value.Sexpr got ->
+                    Expect.equal got want "the car should be nil"
+                | e -> failtestf "fail: got %A" e
+
+        testCase "it should return the car of a pair" <| fun _ ->
+            let inp = [Lisp.Value.Sexpr (Lisp.Pair (Lisp.Atom (Lisp.Number 1),
+                                                    Lisp.Atom (Lisp.Number 2)))]
+            let got = Primitives.car inp 1
+            let want = Lisp.Atom (Lisp.Number 1)
+            match got with
+                | Lisp.Value.Sexpr got ->
+                    Expect.equal got want "the car should be 1"
+                | e -> failtestf "fail: got %A" e
+
+        testCase "it should return the cdr of a list" <| fun _ ->
+            let inp = [Lisp.Value.Sexpr (Lisp.Sexpr [Lisp.Atom (Lisp.Number 1);
+                                                     Lisp.Atom (Lisp.Number 2);
+                                                     Lisp.Atom (Lisp.Number 3)])]
+            let got = Primitives.cdr inp 1
+            let want = Lisp.Sexpr [Lisp.Atom (Lisp.Number 2);
+                                   Lisp.Atom (Lisp.Number 3)]
+            match got with
+                | Lisp.Value.Sexpr got ->
+                    Expect.equal got want "the cdr should be (2 3)"
+                | e -> failtestf "fail: got %A" e
+
+        testCase "it should return the cdr of an empty list" <| fun _ ->
+            let inp = [Lisp.Value.Sexpr (Lisp.Sexpr [])]
+            let got = Primitives.cdr inp 1
+            let want = Lisp.Atom Lisp.Nil
+            match got with
+                | Lisp.Value.Sexpr got ->
+                    Expect.equal got want "the cdr should be nil"
+                | e -> failtestf "fail: got %A" e
+
+        testCase "it should return the cdr of a pair" <| fun _ ->
+            let inp = [Lisp.Value.Sexpr (Lisp.Pair (Lisp.Atom (Lisp.Number 1),
+                                                    Lisp.Atom (Lisp.Number 2)))]
+            let got = Primitives.cdr inp 1
+            let want = Lisp.Atom (Lisp.Number 2)
+            match got with
+                | Lisp.Value.Sexpr got ->
+                    Expect.equal got want "the cdr should be 2"
+                | e -> failtestf "fail: got %A" e
     ]

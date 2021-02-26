@@ -28,3 +28,29 @@ module Primitives =
         |> Lisp.Number
         |> Lisp.Atom
         |> Lisp.Value.Sexpr
+
+    /// car: return the car of a list / pair.
+    let car (stack : Lisp.Value list) (nargs : int) : Lisp.Value =
+        match stack.Head with
+            | Lisp.Value.Sexpr (Lisp.Sexpr s) ->
+                let it = match s with
+                             | [] -> Lisp.Atom Lisp.Nil
+                             | h::_ -> h
+                Lisp.Value.Sexpr it
+            | Lisp.Value.Sexpr (Lisp.Pair (it, _)) ->
+                Lisp.Value.Sexpr it
+            | _ ->
+                Lisp.Value.Sexpr (Lisp.Atom Lisp.Nil)
+
+    /// cdr: return the cdr of a list / pair.
+    let cdr (stack : Lisp.Value list) (nargs : int) : Lisp.Value =
+        match stack.Head with
+            | Lisp.Value.Sexpr (Lisp.Sexpr s) ->
+                let it = match s with
+                             | [] -> Lisp.Atom Lisp.Nil
+                             | _::rest -> Lisp.Sexpr rest
+                Lisp.Value.Sexpr it
+            | Lisp.Value.Sexpr (Lisp.Pair (_, it)) ->
+                Lisp.Value.Sexpr it
+            | _ ->
+                Lisp.Value.Sexpr (Lisp.Atom Lisp.Nil)

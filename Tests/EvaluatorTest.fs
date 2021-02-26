@@ -56,4 +56,31 @@ let tests =
                 | Lisp.Value.Sexpr got ->
                     Expect.equal got want "it should prevent evaluation"
                 | e -> failtestf "fail: got %A" e
+
+        testCase "it should eval car" <| fun _ ->
+            let inp = Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "car");
+                                  Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "quote");
+                                              Lisp.Sexpr [Lisp.Atom (Lisp.Number 1);
+                                                          Lisp.Atom (Lisp.Number 2);
+                                                          Lisp.Atom (Lisp.Number 3)]]]
+            let got = Evaluator.Eval Evaluator.DefaultScope (inp)
+            let want = Lisp.Atom (Lisp.Number 1)
+            match got with
+                | Lisp.Value.Sexpr got ->
+                    Expect.equal got want "it should eval car"
+                | e -> failtestf "fail: got %A" e
+
+        testCase "it should eval cdr" <| fun _ ->
+            let inp = Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "cdr");
+                                  Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "quote");
+                                              Lisp.Sexpr [Lisp.Atom (Lisp.Number 1);
+                                                          Lisp.Atom (Lisp.Number 2);
+                                                          Lisp.Atom (Lisp.Number 3)]]]
+            let got = Evaluator.Eval Evaluator.DefaultScope (inp)
+            let want = Lisp.Sexpr [Lisp.Atom (Lisp.Number 2);
+                                   Lisp.Atom (Lisp.Number 3)]
+            match got with
+                | Lisp.Value.Sexpr got ->
+                    Expect.equal got want "it should eval cdr"
+                | e -> failtestf "fail: got %A" e
     ]

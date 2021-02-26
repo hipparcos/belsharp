@@ -12,6 +12,8 @@ module Evaluator =
           Lisp.Global = Map.empty.
               Add("+", Lisp.Primitive Primitives.add).
               Add("*", Lisp.Primitive Primitives.mul).
+              Add("car", Lisp.Primitive Primitives.car).
+              Add("cdr", Lisp.Primitive Primitives.cdr).
               Add("quote", Lisp.SpecialForm SpecialForms.quote);
           Lisp.Lexical = Map.empty }
 
