@@ -8,49 +8,37 @@ open System
 module Primitives =
 
     /// add: add numbers.
-    let add (args : Lisp.Value list) (nargs : int) : Lisp.Value =
+    let add (args : Lisp.Sexpr list) (nargs : int) : Lisp.Sexpr =
         args
         |> List.map (fun s -> match s with
-                                  | Lisp.Value.Sexpr (Lisp.Atom (Lisp.Number n)) -> n
+                                  | Lisp.Atom (Lisp.Number n) -> n
                                   | _ -> 0)
         |> List.sum
         |> Lisp.Number
         |> Lisp.Atom
-        |> Lisp.Value.Sexpr
 
     /// mul: multiply numbers.
-    let mul (args : Lisp.Value list) (nargs : int) : Lisp.Value =
+    let mul (args : Lisp.Sexpr list) (nargs : int) : Lisp.Sexpr =
         args
         |> List.map (fun s -> match s with
-                                  | Lisp.Value.Sexpr (Lisp.Atom (Lisp.Number n)) -> n
+                                  | Lisp.Atom (Lisp.Number n) -> n
                                   | _ -> 1)
         |> List.fold (fun acc it -> acc * it) 1
         |> Lisp.Number
         |> Lisp.Atom
-        |> Lisp.Value.Sexpr
 
     /// car: return the car of a list / pair.
-    let car (stack : Lisp.Value list) (nargs : int) : Lisp.Value =
+    let car (stack : Lisp.Sexpr list) (nargs : int) : Lisp.Sexpr =
         match stack.Head with
-            | Lisp.Value.Sexpr (Lisp.Sexpr s) ->
-                let it = match s with
-                             | [] -> Lisp.Atom Lisp.Nil
-                             | h::_ -> h
-                Lisp.Value.Sexpr it
-            | Lisp.Value.Sexpr (Lisp.Pair (it, _)) ->
-                Lisp.Value.Sexpr it
-            | _ ->
-                Lisp.Value.Sexpr (Lisp.Atom Lisp.Nil)
+            | Lisp.Sexpr [] -> Lisp.Atom Lisp.Nil
+            | Lisp.Sexpr (it::_) -> it
+            | Lisp.Pair (it, _) -> it
+            | _ -> Lisp.Atom Lisp.Nil
 
     /// cdr: return the cdr of a list / pair.
-    let cdr (stack : Lisp.Value list) (nargs : int) : Lisp.Value =
+    let cdr (stack : Lisp.Sexpr list) (nargs : int) : Lisp.Sexpr =
         match stack.Head with
-            | Lisp.Value.Sexpr (Lisp.Sexpr s) ->
-                let it = match s with
-                             | [] -> Lisp.Atom Lisp.Nil
-                             | _::rest -> Lisp.Sexpr rest
-                Lisp.Value.Sexpr it
-            | Lisp.Value.Sexpr (Lisp.Pair (_, it)) ->
-                Lisp.Value.Sexpr it
-            | _ ->
-                Lisp.Value.Sexpr (Lisp.Atom Lisp.Nil)
+            | Lisp.Sexpr [] -> Lisp.Atom Lisp.Nil
+            | Lisp.Sexpr (_::it) -> Lisp.Sexpr it
+            | Lisp.Pair (_, it) -> it
+            | _ -> Lisp.Atom Lisp.Nil

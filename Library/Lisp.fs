@@ -9,31 +9,53 @@ module Lisp =
     type Symbol = string
 
     /// Atom: the leaf of S-expressions.
+    [<CustomEquality; CustomComparison>]
     type Atom =
+        // Readable:
         | Nil
         | Number of int
         | Symbol of Symbol
-
-    /// Sexpr: lists, pairs the node of S-expressions and their atoms.
-    /// Lists are represented as F# lists instead of cons Pair so
-    /// F# list functions can be used.
-    type Sexpr =
-        | Atom of Atom
-        | Pair of Sexpr * Sexpr
-        | Sexpr of Sexpr list
-
-    /// Value: a Bel value in the VM.
-    type Value =
-        | Sexpr of Sexpr
+        // Not readable:
         | Primitive of Primitive
         | SpecialForm of SpecialForm
         | Error of string
 
+        override x.Equals(y) =
+            match y with
+                | :? Atom as y ->
+                    match (x,y) with
+                        | (Nil, Nil) -> true
+                        | (Number x, Number y) -> x = y
+                        | (Symbol x, Symbol y) -> x = y
+                        | _ -> false
+                | _ -> false
+
+        override x.GetHashCode() = hash (x)
+
+        interface IComparable with
+            member x.CompareTo(y) =
+                match y with
+                    | :? Atom as y ->
+                        match (x,y) with
+                            | (Nil, Nil) -> 0
+                            | (Number x, Number y) -> compare x y
+                            | (Symbol x, Symbol y) -> compare x y
+                            | _ -> -1
+                    | _ -> failwith "can not compare different types"
+
+    /// Sexpr: lists, pairs the node of S-expressions and their atoms.
+    /// Lists are represented as F# lists instead of cons Pair so
+    /// F# list functions can be used.
+    and Sexpr =
+        | Atom of Atom
+        | Pair of Sexpr * Sexpr
+        | Sexpr of Sexpr list
+
     /// Environment: a collection of bindings.
-    and Environment = Map<Symbol, Value>
+    and Environment = Map<Symbol, Sexpr>
 
     /// Bindings: a collection of stacks of bindings for dynamic variables.
-    and Bindings = Map<Symbol, Value list>
+    and Bindings = Map<Symbol, Sexpr list>
 
     /// Scope: a set of bindings.
     and Scope =
@@ -44,10 +66,10 @@ module Lisp =
     /// Primitive: functions that evaluate as per function evaluation
     /// rules (left to right, depth first) but can not be defined in
     /// Bel itself.
-    and Primitive = Value list -> int -> Value
+    and Primitive = Sexpr list -> int -> Sexpr
 
-    /// ValueStack: a stack of Values.
-    and ValueStack = Value list
+    /// SexprStack: a stack of Sexprs.
+    and SexprStack = Sexpr list
 
     /// Instruction: the instructions of the VM.
     /// Declared here because of cyclic dependencies.
@@ -63,7 +85,7 @@ module Lisp =
     /// Context: a context of evaluation.
     and Context =
         { mutable Instr: InstructionStack
-          mutable Data: ValueStack
+          mutable Data: SexprStack
           mutable Scope: Scope }
 
         member this.PushInstr (v : Instruction) : Context =
@@ -74,10 +96,10 @@ module Lisp =
                 | v::rest -> this.Instr <- rest; Some v
                 | _ -> None
 
-        member this.PushData (v : Value) : Context =
+        member this.PushData (v : Sexpr) : Context =
             this.Data <- v::this.Data
             this
-        member this.PopData() : Value option =
+        member this.PopData() : Sexpr option =
             match this.Data with
                 | v::rest -> this.Data <- rest; Some v
                 | _ -> None

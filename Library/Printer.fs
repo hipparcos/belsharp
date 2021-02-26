@@ -9,6 +9,9 @@ module Printer =
         | Lisp.Nil -> "nil"
         | Lisp.Number n -> string n
         | Lisp.Symbol s -> s
+        | Lisp.Primitive p -> $"primitive<{p}>"
+        | Lisp.SpecialForm f -> $"special-form<{f}>"
+        | Lisp.Error err -> $"Error: {err}"
 
     type internal PrintingOp =
         | PrintingAtom of Lisp.Atom
@@ -60,12 +63,5 @@ module Printer =
         loop (generatePrintingOps sexpr)
         builder.ToString()
 
-    let ValueToString (value : Lisp.Value) : string =
-        match value with
-            | Lisp.Value.Sexpr s -> SexprToString s
-            | Lisp.Primitive p -> $"primitive<{p}>"
-            | Lisp.SpecialForm f -> $"special-form<{f}>"
-            | Lisp.Error err -> $"Error: {err}"
-
-    let Print (sexpr : Lisp.Value) : string =
-        ValueToString sexpr
+    let Print (sexpr : Lisp.Sexpr) : string =
+        SexprToString sexpr

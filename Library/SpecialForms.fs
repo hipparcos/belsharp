@@ -7,15 +7,12 @@ open System
 /// evaluate all of its branches.
 module SpecialForms =
 
-    let environmentToAList (env : Lisp.Environment) : Lisp.Value =
+    let environmentToAList (env : Lisp.Environment) : Lisp.Sexpr =
         let mutable acc : Lisp.Sexpr list = []
         for KeyValue(symbol, value) in env do
             let symbol = Lisp.Atom (Lisp.Symbol symbol)
-            let value = match value with
-                            | Lisp.Value.Sexpr sexpr -> sexpr
-                            | _ -> symbol
             acc <- (Lisp.Pair (symbol, value))::acc
-        Lisp.Value.Sexpr (Lisp.Sexpr acc)
+        Lisp.Sexpr acc
 
     let globe (context : Lisp.Context) (nargs : int) : unit =
         context.PushData(environmentToAList context.Scope.Global) |> ignore
