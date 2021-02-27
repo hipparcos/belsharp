@@ -5,16 +5,22 @@ open System
 /// Evaluator provides the eval function.
 module Evaluator =
 
+    let defPrim n p =
+          (n, p) |> (Lisp.Prim >> Lisp.Primitive >> Lisp.Atom)
+
+    let defForm n f =
+        (n, f) |> (Lisp.Form >> Lisp.SpecialForm >> Lisp.Atom)
+
     /// DefaultScope: a scope with primitives and special forms defined
     /// in the global environment.
     let DefaultScope =
         { Lisp.Dynamic = Map.empty
           Lisp.Global = Map.empty.
-              Add("+", Lisp.Atom (Lisp.Primitive Primitives.add)).
-              Add("*", Lisp.Atom (Lisp.Primitive Primitives.mul)).
-              Add("car", Lisp.Atom (Lisp.Primitive Primitives.car)).
-              Add("cdr", Lisp.Atom (Lisp.Primitive Primitives.cdr)).
-              Add("quote", Lisp.Atom (Lisp.SpecialForm SpecialForms.quote));
+              Add("+", defPrim "+" Primitives.add).
+              Add("*", defPrim "*" Primitives.mul).
+              Add("car", defPrim "car" Primitives.car).
+              Add("cdr", defPrim "cdr" Primitives.cdr).
+              Add("quote", defForm "quote" SpecialForms.quote);
           Lisp.Lexical = Map.empty }
 
     /// popDataPushInstr: pop value from data stack, push to instr stack.
@@ -37,7 +43,7 @@ module Evaluator =
 
     let internal evalPrimitive (prim : Lisp.Primitive) (stack : Lisp.SexprStack) (nargs : int) : Lisp.SexprStack =
         let (args, rest) = List.splitAt nargs stack
-        let result = prim args nargs
+        let result = (Lisp.primitiveFun prim) args nargs
         result::rest
 
     /// Eval: eval SEXPR in SCOPE.
@@ -50,7 +56,7 @@ module Evaluator =
                               | Some v -> v
                               | None -> Lisp.Atom Lisp.Nil
                 | Some (Lisp.EvalSpecialForm (form, nargs)) ->
-                    form context nargs
+                    (Lisp.specialFromFun form) context nargs
                     loop context
                 | Some (Lisp.EvalPrimitive (prim, nargs)) ->
                     context.Data <- evalPrimitive prim context.Data nargs
@@ -70,9 +76,9 @@ module Evaluator =
                 | Some (Lisp.EvalSexpr sexpr) ->
                     match sexpr with
                         | Lisp.Atom (Lisp.Symbol "globe") ->
-                            context.PushInstr (Lisp.EvalSpecialForm (SpecialForms.globe, 0)) |> ignore
+                            context.PushInstr (Lisp.EvalSpecialForm (Lisp.Form ("globe", SpecialForms.globe), 0)) |> ignore
                         | Lisp.Atom (Lisp.Symbol "scope") ->
-                            context.PushInstr (Lisp.EvalSpecialForm (SpecialForms.scope, 0)) |> ignore
+                            context.PushInstr (Lisp.EvalSpecialForm (Lisp.Form ("scope", SpecialForms.scope), 0)) |> ignore
                         | Lisp.Atom (Lisp.Symbol s) ->
                             context.PushData(lookup s context.Scope) |> ignore
                         | Lisp.Pair (car, cdr) ->

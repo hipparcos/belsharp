@@ -66,7 +66,7 @@ module Lisp =
     /// Primitive: functions that evaluate as per function evaluation
     /// rules (left to right, depth first) but can not be defined in
     /// Bel itself.
-    and Primitive = Sexpr list -> int -> Sexpr
+    and Primitive = Prim of string * (Sexpr list -> int -> Sexpr)
 
     /// SexprStack: a stack of Sexprs.
     and SexprStack = Sexpr list
@@ -107,4 +107,7 @@ module Lisp =
     /// SpecialForm: forms that does not evaluate as per function
     /// evaluation rules. An example is the `if` form which does not
     /// evaluate all of its branches.
-    and SpecialForm = Context -> int -> unit
+    and SpecialForm = Form of string * (Context -> int -> unit)
+
+    let primitiveFun (Prim (_, p)) = p
+    let specialFromFun (Form (_, f)) = f

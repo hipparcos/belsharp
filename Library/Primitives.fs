@@ -23,7 +23,7 @@ module Primitives =
         |> List.map (fun s -> match s with
                                   | Lisp.Atom (Lisp.Number n) -> n
                                   | _ -> 1)
-        |> List.fold (fun acc it -> acc * it) 1
+        |> List.fold (*) 1
         |> Lisp.Number
         |> Lisp.Atom
 

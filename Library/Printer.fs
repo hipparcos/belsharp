@@ -9,8 +9,8 @@ module Printer =
         | Lisp.Nil -> "nil"
         | Lisp.Number n -> string n
         | Lisp.Symbol s -> s
-        | Lisp.Primitive p -> $"primitive<{p}>"
-        | Lisp.SpecialForm f -> $"special-form<{f}>"
+        | Lisp.Primitive (Lisp.Prim (n, _)) -> $"(lit prim {n})"
+        | Lisp.SpecialForm (Lisp.Form (n, _)) -> $"(lit form {n})"
         | Lisp.Error err -> $"Error: {err}"
 
     type internal PrintingOp =
