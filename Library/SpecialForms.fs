@@ -8,11 +8,10 @@ open System
 module SpecialForms =
 
     let environmentToAList (env : Lisp.Environment) : Lisp.Sexpr =
-        let mutable acc : Lisp.Sexpr list = []
-        for KeyValue(symbol, value) in env do
-            let symbol = Lisp.Atom (Lisp.Symbol symbol)
-            acc <- (Lisp.Pair (symbol, value))::acc
-        Lisp.Sexpr acc
+        Map.fold (fun acc s v ->
+                      (Lisp.Pair (Lisp.Symbol s |> Lisp.Atom, v))::acc)
+                 [] env
+        |> Lisp.Sexpr
 
     let globe (context : Lisp.Context) (nargs : int) : unit =
         context.PushData(environmentToAList context.Scope.Global) |> ignore
