@@ -13,11 +13,11 @@ module SpecialForms =
                  [] env
         |> Lisp.Sexpr
 
-    let globe (context : Lisp.Context) (nargs : int) : unit =
-        context.PushData(environmentToAList context.Scope.Global) |> ignore
+    let globe (scope : Lisp.Scope) (args : Lisp.DataStack) : Lisp.SpecialFormResult =
+        scope, [], [environmentToAList scope.Global]
 
-    let scope (context : Lisp.Context) (nargs : int) : unit =
-        context.PushData(environmentToAList context.Scope.Lexical) |> ignore
+    let scope (scope : Lisp.Scope) (args : Lisp.DataStack) : Lisp.SpecialFormResult =
+        scope, [], [environmentToAList scope.Lexical]
 
-    let quote (context : Lisp.Context) (nargs : int) : unit =
-        ()
+    let quote (scope : Lisp.Scope) (args : Lisp.DataStack) : Lisp.SpecialFormResult =
+        scope, [], args

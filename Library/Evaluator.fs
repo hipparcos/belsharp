@@ -1,98 +1,103 @@
 namespace Library
 
-open System
-
 /// Evaluator provides the eval function.
 module Evaluator =
 
     let defPrim n p =
-          (n, p) |> (Lisp.Prim >> Lisp.Primitive >> Lisp.Atom)
+        { Lisp.Primitive.Name = n
+          Lisp.Primitive.Func = p }
+        |> Lisp.Primitive
+        |> Lisp.Atom
 
     let defForm n f =
-        (n, f) |> (Lisp.Form >> Lisp.SpecialForm >> Lisp.Atom)
+        { Lisp.SpecialForm.Name = n
+          Lisp.SpecialForm.Func = f }
+        |> Lisp.SpecialForm
+        |> Lisp.Atom
 
     /// DefaultScope: a scope with primitives and special forms defined
     /// in the global environment.
     let DefaultScope =
         { Lisp.Dynamic = Map.empty
-          Lisp.Global = Map.empty.
-              Add("+", defPrim "+" Primitives.add).
-              Add("*", defPrim "*" Primitives.mul).
-              Add("car", defPrim "car" Primitives.car).
-              Add("cdr", defPrim "cdr" Primitives.cdr).
-              Add("quote", defForm "quote" SpecialForms.quote);
+          Lisp.Global =
+              Map
+                  .empty
+                  .Add("+", defPrim "+" Primitives.add)
+                  .Add("*", defPrim "*" Primitives.mul)
+                  .Add("car", defPrim "car" Primitives.car)
+                  .Add("cdr", defPrim "cdr" Primitives.cdr)
+                  .Add("quote", defForm "quote" SpecialForms.quote)
           Lisp.Lexical = Map.empty }
 
-    /// popDataPushInstr: pop value from data stack, push to instr stack.
-    let rec internal popDataPushInstr (ctx : Lisp.Context) n : unit =
-        if n > 0 then
-            let instr = match (ctx.PopData()) with
-                            | Some v -> v
-                            | _ -> Lisp.Atom Lisp.Nil
-            popDataPushInstr (ctx.PushInstr(Lisp.EvalSexpr instr)) (n - 1)
-
     /// lookup: retrieve the value bound to a symbol in the current scope.
-    let lookup (sym : Lisp.Symbol) (scope : Lisp.Scope) : Lisp.Sexpr =
+    let lookup (sym: Lisp.Symbol) (scope: Lisp.Scope): Lisp.Sexpr =
         match (scope.Dynamic.TryFind(sym)) with
-            | Some (sexpr::_) -> sexpr
-            | _ -> match (scope.Lexical.TryFind sym) with
-                       | Some sexpr -> sexpr
-                       | None -> match (scope.Global.TryFind sym) with
-                                     | Some sexpr -> sexpr
-                                     | None -> Lisp.Atom Lisp.Nil
+            | Some (sexpr :: _) -> sexpr
+            | _ ->
+            match (scope.Lexical.TryFind sym) with
+                | Some sexpr -> sexpr
+                | None ->
+                match (scope.Global.TryFind sym) with
+                    | Some sexpr -> sexpr
+                    | None -> Lisp.Atom Lisp.Nil
 
-    let internal evalPrimitive (prim : Lisp.Primitive) (stack : Lisp.SexprStack) (nargs : int) : Lisp.SexprStack =
-        let (args, rest) = List.splitAt nargs stack
-        let result = (Lisp.primitiveFun prim) args nargs
-        result::rest
+    let internal evalSexpr (scope : Lisp.Scope) (sexpr : Lisp.Sexpr): Lisp.EvalStack * Lisp.DataStack =
+        match sexpr with
+            | Lisp.Atom (Lisp.Symbol "globe") ->
+                [Lisp.EvalSpecialForm({ Lisp.SpecialForm.Name = "globe"
+                                        Lisp.SpecialForm.Func = SpecialForms.globe }, 0)]
+                , []
+            | Lisp.Atom (Lisp.Symbol "scope") ->
+                [Lisp.EvalSpecialForm({ Lisp.SpecialForm.Name = "scope"
+                                        Lisp.SpecialForm.Func = SpecialForms.scope }, 0)]
+                , []
+            | Lisp.Atom (Lisp.Symbol s) ->
+                [], [lookup s scope]
+            | Lisp.Pair (car, cdr) ->
+                [ Lisp.EvalSexpr car
+                  Lisp.EvalTop (1, scope) ]
+                , [cdr]
+            | Lisp.Sexpr (car :: cdr) ->
+                [ Lisp.EvalSexpr car
+                  Lisp.EvalTop (List.length cdr, scope) ]
+                , cdr
+            | _ -> [], [sexpr]
+
+    let internal evalInstruction (scope : Lisp.Scope) (instr : Lisp.Instruction) (data : Lisp.DataStack): Lisp.Scope * Lisp.EvalStack * Lisp.DataStack =
+        match instr with
+            | Lisp.EvalSexpr sexpr ->
+                let (newInstr, newData) = evalSexpr scope sexpr
+                scope, newInstr, List.append newData data
+            | Lisp.EvalSpecialForm (form, nargs) ->
+                let (args, rest) = List.splitAt nargs data
+                let (scope, newInstr, newData) = form.Func scope args
+                scope, newInstr, List.append newData rest
+            | Lisp.EvalPrimitive (prim, nargs) ->
+                let (args, rest) = List.splitAt nargs data
+                let result = prim.Func args
+                scope, [], result::rest
+            | Lisp.EvalTop (nargs, scope) ->
+                match List.tryHead data with
+                    | Some (Lisp.Atom (Lisp.Primitive p)) ->
+                        let (args, rest) = List.splitAt nargs data.Tail
+                        let instr = List.fold (fun acc it -> (Lisp.EvalSexpr it)::acc) [Lisp.EvalPrimitive (p, nargs)] args
+                        scope, instr, rest
+                    | Some (Lisp.Atom (Lisp.SpecialForm f)) ->
+                        scope, [Lisp.EvalSpecialForm(f, nargs)], data.Tail
+                    | Some i ->
+                        scope, [], [Lisp.Atom (Lisp.Error $"{i} is not a primitive nor a special form")]
+                    | _ ->
+                        scope, [], [Lisp.Atom(Lisp.Error "eval called on an empty stack")]
 
     /// Eval: eval SEXPR in SCOPE.
     /// Use stacks of instructions and values to be tail recursive.
-    let Eval (scope : Lisp.Scope) (sexpr : Lisp.Sexpr) : Lisp.Sexpr =
-        let context = { Lisp.Instr = [] ; Lisp.Data = [] ; Lisp.Scope = scope }
-        let rec loop (context : Lisp.Context) : Lisp.Sexpr =
-            match context.PopInstr() with
-                | None -> match context.PopData() with
-                              | Some v -> v
-                              | None -> Lisp.Atom Lisp.Nil
-                | Some (Lisp.EvalSpecialForm (form, nargs)) ->
-                    (Lisp.specialFromFun form) context nargs
-                    loop context
-                | Some (Lisp.EvalPrimitive (prim, nargs)) ->
-                    context.Data <- evalPrimitive prim context.Data nargs
-                    loop context
-                | Some (Lisp.EvalTop nargs) ->
-                    let instr = context.PopData()
-                    match instr with
-                        | Some (Lisp.Atom (Lisp.Primitive p)) ->
-                            context.PushInstr (Lisp.EvalPrimitive (p, nargs)) |> ignore
-                            popDataPushInstr context nargs
-                            loop context
-                        | Some (Lisp.Atom (Lisp.SpecialForm f)) ->
-                            context.PushInstr (Lisp.EvalSpecialForm (f, nargs)) |> ignore
-                            loop context
-                        | Some i -> Lisp.Atom (Lisp.Error $"{i} is not a primitive nor a special form")
-                        | _ -> Lisp.Atom (Lisp.Error "eval called on an empty stack")
-                | Some (Lisp.EvalSexpr sexpr) ->
-                    match sexpr with
-                        | Lisp.Atom (Lisp.Symbol "globe") ->
-                            context.PushInstr (Lisp.EvalSpecialForm (Lisp.Form ("globe", SpecialForms.globe), 0)) |> ignore
-                        | Lisp.Atom (Lisp.Symbol "scope") ->
-                            context.PushInstr (Lisp.EvalSpecialForm (Lisp.Form ("scope", SpecialForms.scope), 0)) |> ignore
-                        | Lisp.Atom (Lisp.Symbol s) ->
-                            context.PushData(lookup s context.Scope) |> ignore
-                        | Lisp.Pair (car, cdr) ->
-                            context.PushData cdr |> ignore
-                            context.PushInstr (Lisp.EvalTop 1) |> ignore
-                            context.PushInstr (Lisp.EvalSexpr car) |> ignore
-                        | Lisp.Sexpr (car::cdr) ->
-                            let mutable nargs = 0
-                            for it in cdr do
-                                context.PushData it |> ignore
-                                nargs <- nargs + 1
-                            context.PushInstr (Lisp.EvalTop nargs) |> ignore
-                            context.PushInstr (Lisp.EvalSexpr car) |> ignore
-                        | _ ->
-                            context.PushData sexpr |> ignore
-                    loop context
-        loop (context.PushInstr(Lisp.EvalSexpr sexpr))
+    let Eval (scope: Lisp.Scope) (sexpr: Lisp.Sexpr): Lisp.Sexpr =
+        let rec loop (scope : Lisp.Scope) (instructions : Lisp.EvalStack) (data : Lisp.DataStack) : Lisp.Sexpr =
+            match instructions with
+                | [] -> match data with
+                        | result::_ -> result
+                        | [] -> Lisp.Atom Lisp.Nil
+                | instr::rest ->
+                    let (newScope, newInstructions, newData) = evalInstruction scope instr data
+                    loop newScope (List.append newInstructions rest) newData
+        loop scope [Lisp.EvalSexpr sexpr] []

@@ -1,14 +1,12 @@
 namespace Library
 
-open System
-
 /// Primitives are functions that evaluate as per function evaluation
 /// rules (left to right, depth first) but can not be defined in Bel
 /// itself.
 module Primitives =
 
     /// add: add numbers.
-    let add (args : Lisp.Sexpr list) (nargs : int) : Lisp.Sexpr =
+    let add (args : Lisp.Sexpr list) : Lisp.Sexpr =
         args
         |> List.map (fun s -> match s with
                                   | Lisp.Atom (Lisp.Number n) -> n
@@ -18,7 +16,7 @@ module Primitives =
         |> Lisp.Atom
 
     /// mul: multiply numbers.
-    let mul (args : Lisp.Sexpr list) (nargs : int) : Lisp.Sexpr =
+    let mul (args : Lisp.Sexpr list) : Lisp.Sexpr =
         args
         |> List.map (fun s -> match s with
                                   | Lisp.Atom (Lisp.Number n) -> n
@@ -28,7 +26,7 @@ module Primitives =
         |> Lisp.Atom
 
     /// car: return the car of a list / pair.
-    let car (stack : Lisp.Sexpr list) (nargs : int) : Lisp.Sexpr =
+    let car (stack : Lisp.Sexpr list) : Lisp.Sexpr =
         match stack.Head with
             | Lisp.Sexpr [] -> Lisp.Atom Lisp.Nil
             | Lisp.Sexpr (it::_) -> it
@@ -36,7 +34,7 @@ module Primitives =
             | _ -> Lisp.Atom Lisp.Nil
 
     /// cdr: return the cdr of a list / pair.
-    let cdr (stack : Lisp.Sexpr list) (nargs : int) : Lisp.Sexpr =
+    let cdr (stack : Lisp.Sexpr list) : Lisp.Sexpr =
         match stack.Head with
             | Lisp.Sexpr [] -> Lisp.Atom Lisp.Nil
             | Lisp.Sexpr (_::it) -> Lisp.Sexpr it

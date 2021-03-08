@@ -1,7 +1,5 @@
 namespace Library
 
-open System
-
 /// Lisp data structures.
 module Lisp =
 
@@ -9,7 +7,6 @@ module Lisp =
     type Symbol = string
 
     /// Atom: the leaf of S-expressions.
-    [<CustomEquality; CustomComparison>]
     type Atom =
         // Readable:
         | Nil
@@ -19,29 +16,6 @@ module Lisp =
         | Primitive of Primitive
         | SpecialForm of SpecialForm
         | Error of string
-
-        override x.Equals(y) =
-            match y with
-                | :? Atom as y ->
-                    match (x,y) with
-                        | (Nil, Nil) -> true
-                        | (Number x, Number y) -> x = y
-                        | (Symbol x, Symbol y) -> x = y
-                        | _ -> false
-                | _ -> false
-
-        override x.GetHashCode() = hash (x)
-
-        interface IComparable with
-            member x.CompareTo(y) =
-                match y with
-                    | :? Atom as y ->
-                        match (x,y) with
-                            | (Nil, Nil) -> 0
-                            | (Number x, Number y) -> compare x y
-                            | (Symbol x, Symbol y) -> compare x y
-                            | _ -> -1
-                    | _ -> failwith "can not compare different types"
 
     /// Sexpr: lists, pairs the node of S-expressions and their atoms.
     /// Lists are represented as F# lists instead of cons Pair so
@@ -63,51 +37,52 @@ module Lisp =
           Global: Environment
           Lexical: Environment }
 
-    /// Primitive: functions that evaluate as per function evaluation
-    /// rules (left to right, depth first) but can not be defined in
-    /// Bel itself.
-    and Primitive = Prim of string * (Sexpr list -> int -> Sexpr)
-
-    /// SexprStack: a stack of Sexprs.
-    and SexprStack = Sexpr list
-
     /// Instruction: the instructions of the VM.
     /// Declared here because of cyclic dependencies.
     and Instruction =
         | EvalSexpr of Sexpr
-        | EvalTop of int
-        | EvalPrimitive of Primitive * int
-        | EvalSpecialForm of SpecialForm * int
+        | EvalTop of nargs:int * Scope
+        | EvalPrimitive of Primitive * nargs:int
+        | EvalSpecialForm of SpecialForm * nargs:int
 
-    /// InstructionStach: a stack of instructions.
-    and InstructionStack = Instruction list
+    and DataStack = Sexpr list
 
-    /// Context: a context of evaluation.
-    and Context =
-        { mutable Instr: InstructionStack
-          mutable Data: SexprStack
-          mutable Scope: Scope }
+    and EvalStack = Instruction list
 
-        member this.PushInstr (v : Instruction) : Context =
-            this.Instr <- v::this.Instr
-            this
-        member this.PopInstr() : Instruction option =
-            match this.Instr with
-                | v::rest -> this.Instr <- rest; Some v
-                | _ -> None
+    and PrimitiveName = string
 
-        member this.PushData (v : Sexpr) : Context =
-            this.Data <- v::this.Data
-            this
-        member this.PopData() : Sexpr option =
-            match this.Data with
-                | v::rest -> this.Data <- rest; Some v
-                | _ -> None
+    and PrimitiveFunc = DataStack -> Sexpr
 
+    /// Primitive: functions that evaluate as per function evaluation
+    /// rules (left to right, depth first) but can not be defined in
+    /// Bel itself.    
+    and [<CustomEquality; NoComparison>] Primitive =
+        { Name: PrimitiveName
+          Func: PrimitiveFunc }
+        
+        override x.Equals(y) =
+            match y with
+                | :? Primitive as y -> x.Name = y.Name
+                | _ -> false
+
+        override x.GetHashCode() = hash (x.Name)
+        
+    and SpecialFormName = string
+    
+    and SpecialFormFunc = Scope -> DataStack -> SpecialFormResult
+
+    and SpecialFormResult = Scope * EvalStack * DataStack
+    
     /// SpecialForm: forms that does not evaluate as per function
     /// evaluation rules. An example is the `if` form which does not
     /// evaluate all of its branches.
-    and SpecialForm = Form of string * (Context -> int -> unit)
+    and [<CustomEquality; NoComparison>] SpecialForm =
+        { Name: SpecialFormName
+          Func: SpecialFormFunc }
+        
+        override x.Equals(y) =
+            match y with
+                | :? SpecialForm as y -> x.Name = y.Name
+                | _ -> false
 
-    let primitiveFun (Prim (_, p)) = p
-    let specialFromFun (Form (_, f)) = f
+        override x.GetHashCode() = hash (x.Name)
