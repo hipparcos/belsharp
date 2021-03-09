@@ -53,10 +53,9 @@ module Lexer =
 
     /// Lex: lex STR producing a lazy sequence of Tokens.
     /// The returned sequence ends with the EOF token.
-    /// At the moment STR is just a string but might be replaced by
-    /// by a seq<char>.
-    let rec Lex (str: string) : seq<Token> =
-        match (lexToken str) with
-            | (tok, _) when tok = EOF -> seq { yield EOF }
-            | (tok, str) -> seq { yield tok
-                                  yield! Lex str }
+    let rec Lex (str: string) : Token list =
+        let rec loop str tokens =
+            match lexToken str with
+                | (tok, _) when tok = EOF -> EOF::tokens
+                | (tok, str) -> loop str (tok::tokens)
+        loop str [] |> List.rev

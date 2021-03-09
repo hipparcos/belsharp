@@ -132,7 +132,7 @@ module Parser =
     /// Operations on the stack of ParsingStates represents transitions
     /// between ParsingState. The depth of this stack is linked to the
     /// level of current nesting of the list/pair being parsed.
-    let Parse (tokens : seq<Lexer.Token>) : Result<Lisp.Sexpr, string> =
+    let Parse (tokens : Lexer.Token list) : Result<Lisp.Sexpr, string> =
         // Each time a Parser is called, it can decide what the next
         // state should be. Multiple operations can be chained as
         // replacing the current state requires to pop the stack then
@@ -162,16 +162,15 @@ module Parser =
                            | [] -> Lisp.Atom Lisp.Nil
                            | l -> l.Head)
                 | _ ->
-                    if Seq.isEmpty tokens then Error "unexcepted end of stream"
-                    else
-                        let parser = ParsingStateToParser state
-                        let tok = Seq.head tokens
-                        match (parser tok sexprs.Head) with
-                            | Error err -> Error err
-                            | Ok (sexprAction, stateActions) ->
-                                loop (Seq.tail tokens)
-                                     (updateParsingStateStack stateActions states)
-                                     (updateSexprListStack sexprAction sexprs)
+                    match tokens with
+                        | [] -> Error "unexcepted end of stream"
+                        | tok::rest ->
+                            let parser = ParsingStateToParser state
+                            match (parser tok sexprs.Head) with
+                                | Error err -> Error err
+                                | Ok (sexprAction, stateActions) ->
+                                     loop rest
+                                          (updateParsingStateStack stateActions states)
+                                          (updateSexprListStack sexprAction sexprs)
         // Bootstrap parsing starting at top-level at depth 1 with no accumulated sexprs.
-        if Seq.isEmpty tokens then Error "empty stream of tokens"
-        else loop tokens [ParsingTopLevel; ParsingEOF] [[]]
+        loop tokens [ParsingTopLevel; ParsingEOF] [[]]
