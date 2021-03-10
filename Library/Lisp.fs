@@ -13,6 +13,7 @@ module Lisp =
         | Number of int
         | Symbol of Symbol
         // Not readable:
+        | Function of Function
         | Primitive of Primitive
         | SpecialForm of SpecialForm
         | Error of string
@@ -40,14 +41,24 @@ module Lisp =
     /// Instruction: the instructions of the VM.
     /// Declared here because of cyclic dependencies.
     and Instruction =
-        | EvalSexpr of Sexpr
+        | EvalSexpr of Sexpr * Scope
         | EvalTop of nargs:int * Scope
+        | EvalFunction of Function * nargs:int * Scope
         | EvalPrimitive of Primitive * nargs:int
-        | EvalSpecialForm of SpecialForm * nargs:int
+        | EvalSpecialForm of SpecialForm * nargs:int * Scope
 
     and DataStack = Sexpr list
 
     and EvalStack = Instruction list
+
+    and Function =
+        { Scope: Environment
+          Parameters: Symbol list
+          Body: Sexpr }
+
+        member this.parameterList =
+            List.map (Symbol >> Atom) this.Parameters
+            |> Sexpr
 
     and PrimitiveName = string
 
@@ -86,3 +97,15 @@ module Lisp =
                 | _ -> false
 
         override x.GetHashCode() = hash (x.Name)
+
+    let environmentToAList (env : Environment) : Sexpr =
+        Map.fold (fun acc s v ->
+                      (Pair (Symbol s |> Atom, v))::acc)
+                 [] env
+        |> Sexpr
+
+    let alistToEnvironment (env : Sexpr list) : Environment =
+        List.fold (fun env it -> match it with
+                                 | Pair (Atom (Symbol s), v) -> env.Add(s, v)
+                                 | _ -> env)
+                  Map.empty env

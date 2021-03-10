@@ -7,17 +7,37 @@ open System
 /// evaluate all of its branches.
 module SpecialForms =
 
-    let environmentToAList (env : Lisp.Environment) : Lisp.Sexpr =
-        Map.fold (fun acc s v ->
-                      (Lisp.Pair (Lisp.Symbol s |> Lisp.Atom, v))::acc)
-                 [] env
-        |> Lisp.Sexpr
-
     let globe (scope : Lisp.Scope) (args : Lisp.DataStack) : Lisp.SpecialFormResult =
-        scope, [], [environmentToAList scope.Global]
+        scope, [], [Lisp.environmentToAList scope.Global]
 
     let scope (scope : Lisp.Scope) (args : Lisp.DataStack) : Lisp.SpecialFormResult =
-        scope, [], [environmentToAList scope.Lexical]
+        scope, [], [Lisp.environmentToAList scope.Lexical]
 
     let quote (scope : Lisp.Scope) (args : Lisp.DataStack) : Lisp.SpecialFormResult =
         scope, [], args
+
+    let internal clo = Lisp.Atom (Lisp.Symbol "clo")
+
+    let lit (scope : Lisp.Scope) (args : Lisp.DataStack) : Lisp.SpecialFormResult =
+        match args with
+            | clo::env::(Lisp.Sexpr parameters)::[body] ->
+                let fScope = match env with
+                             | Lisp.Sexpr env -> Lisp.alistToEnvironment env
+                             | _ -> Map.empty
+                let parameters = parameters
+                                 |> List.filter (fun it -> match it with
+                                                           | Lisp.Atom (Lisp.Symbol _) -> true
+                                                           | _ -> false)
+                                 |> List.map (fun it -> match it with
+                                                        | Lisp.Atom (Lisp.Symbol s) -> s
+                                                        | _ -> "")
+                scope, [], [
+                    Lisp.Atom (Lisp.Function {
+                        Scope = fScope
+                        Parameters = parameters
+                        Body = body
+                    })
+                ]
+            | _ ->
+                let l = Lisp.Symbol "lit" |> Lisp.Atom
+                scope, [], [Lisp.Sexpr (l::args)]

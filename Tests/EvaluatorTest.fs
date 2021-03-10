@@ -65,4 +65,19 @@ let tests =
             let want = Lisp.Sexpr [Lisp.Atom (Lisp.Number 2);
                                    Lisp.Atom (Lisp.Number 3)]
             Expect.equal got want "it should eval cdr"
+
+        testCase "it should eval literal function" <| fun _ ->
+            let inp = Lisp.Sexpr [Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "lit");
+                                              Lisp.Atom (Lisp.Symbol "clo");
+                                              Lisp.Atom (Lisp.Symbol "nil")
+                                              Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "x");
+                                                          Lisp.Atom (Lisp.Symbol "y")]
+                                              Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "+")
+                                                          Lisp.Atom (Lisp.Symbol "x");
+                                                          Lisp.Atom (Lisp.Symbol "y")]];
+                                  Lisp.Atom (Lisp.Number 1);
+                                  Lisp.Atom (Lisp.Number 2)]
+            let got = Evaluator.Eval Evaluator.DefaultScope (inp)
+            let want = Lisp.Atom (Lisp.Number 3)
+            Expect.equal got want "the sum should be 3"
     ]

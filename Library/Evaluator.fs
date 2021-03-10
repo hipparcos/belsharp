@@ -26,6 +26,7 @@ module Evaluator =
                   .Add("*", defPrim "*" Primitives.mul)
                   .Add("car", defPrim "car" Primitives.car)
                   .Add("cdr", defPrim "cdr" Primitives.cdr)
+                  .Add("lit", defForm "lit" SpecialForms.lit)
                   .Add("quote", defForm "quote" SpecialForms.quote)
           Lisp.Lexical = Map.empty }
 
@@ -45,59 +46,76 @@ module Evaluator =
         match sexpr with
             | Lisp.Atom (Lisp.Symbol "globe") ->
                 [Lisp.EvalSpecialForm({ Lisp.SpecialForm.Name = "globe"
-                                        Lisp.SpecialForm.Func = SpecialForms.globe }, 0)]
+                                        Lisp.SpecialForm.Func = SpecialForms.globe }, 0, scope)]
                 , []
             | Lisp.Atom (Lisp.Symbol "scope") ->
                 [Lisp.EvalSpecialForm({ Lisp.SpecialForm.Name = "scope"
-                                        Lisp.SpecialForm.Func = SpecialForms.scope }, 0)]
+                                        Lisp.SpecialForm.Func = SpecialForms.scope }, 0, scope)]
                 , []
             | Lisp.Atom (Lisp.Symbol s) ->
                 [], [lookup s scope]
             | Lisp.Pair (car, cdr) ->
-                [ Lisp.EvalSexpr car
+                [ Lisp.EvalSexpr (car, scope)
                   Lisp.EvalTop (1, scope) ]
                 , [cdr]
             | Lisp.Sexpr (car :: cdr) ->
-                [ Lisp.EvalSexpr car
+                [ Lisp.EvalSexpr (car, scope)
                   Lisp.EvalTop (List.length cdr, scope) ]
                 , cdr
             | _ -> [], [sexpr]
 
-    let internal evalInstruction (scope : Lisp.Scope) (instr : Lisp.Instruction) (data : Lisp.DataStack): Lisp.Scope * Lisp.EvalStack * Lisp.DataStack =
+    let internal evalInstruction (instr : Lisp.Instruction) (data : Lisp.DataStack): Lisp.EvalStack * Lisp.DataStack =
         match instr with
-            | Lisp.EvalSexpr sexpr ->
+            | Lisp.EvalSexpr (sexpr, scope) ->
                 let (newInstr, newData) = evalSexpr scope sexpr
-                scope, newInstr, List.append newData data
-            | Lisp.EvalSpecialForm (form, nargs) ->
+                newInstr, List.append newData data
+            | Lisp.EvalFunction (func, nargs, scope) ->
+                let (args, rest) = List.splitAt nargs data
+                let rec setArgs (scope : Lisp.Environment) parameters values =
+                    match parameters with
+                    | [] -> scope
+                    | p::ps ->
+                        let v, vs = match values with
+                                    | [] -> Lisp.Atom Lisp.Nil, []
+                                    | v::vs -> v, vs
+                        setArgs (scope.Add(p, v)) ps vs
+                let lexScope = setArgs func.Scope func.Parameters args
+                let newInstr = [Lisp.EvalSexpr (func.Body, {scope with Lexical = lexScope})]
+                newInstr, rest
+            | Lisp.EvalSpecialForm (form, nargs, scope) ->
                 let (args, rest) = List.splitAt nargs data
                 let (scope, newInstr, newData) = form.Func scope args
-                scope, newInstr, List.append newData rest
+                newInstr, List.append newData rest
             | Lisp.EvalPrimitive (prim, nargs) ->
                 let (args, rest) = List.splitAt nargs data
                 let result = prim.Func args
-                scope, [], result::rest
+                [], result::rest
             | Lisp.EvalTop (nargs, scope) ->
                 match List.tryHead data with
+                    | Some (Lisp.Atom (Lisp.Function f)) ->
+                        let (args, rest) = List.splitAt nargs data.Tail
+                        let instructions = List.fold (fun acc it -> (Lisp.EvalSexpr (it, scope))::acc) [Lisp.EvalFunction (f, nargs, scope)] args
+                        instructions, rest
                     | Some (Lisp.Atom (Lisp.Primitive p)) ->
                         let (args, rest) = List.splitAt nargs data.Tail
-                        let instr = List.fold (fun acc it -> (Lisp.EvalSexpr it)::acc) [Lisp.EvalPrimitive (p, nargs)] args
-                        scope, instr, rest
+                        let instructions = List.fold (fun acc it -> (Lisp.EvalSexpr (it, scope))::acc) [Lisp.EvalPrimitive (p, nargs)] args
+                        instructions, rest
                     | Some (Lisp.Atom (Lisp.SpecialForm f)) ->
-                        scope, [Lisp.EvalSpecialForm(f, nargs)], data.Tail
+                        [Lisp.EvalSpecialForm(f, nargs, scope)], data.Tail
                     | Some i ->
-                        scope, [], [Lisp.Atom (Lisp.Error $"{i} is not a primitive nor a special form")]
+                        [], [Lisp.Atom (Lisp.Error $"{i} is not a primitive nor a special form")]
                     | _ ->
-                        scope, [], [Lisp.Atom(Lisp.Error "eval called on an empty stack")]
+                        [], [Lisp.Atom(Lisp.Error "eval called on an empty stack")]
 
     /// Eval: eval SEXPR in SCOPE.
     /// Use stacks of instructions and values to be tail recursive.
     let Eval (scope: Lisp.Scope) (sexpr: Lisp.Sexpr): Lisp.Sexpr =
-        let rec loop (scope : Lisp.Scope) (instructions : Lisp.EvalStack) (data : Lisp.DataStack) : Lisp.Sexpr =
+        let rec loop (instructions : Lisp.EvalStack) (data : Lisp.DataStack) : Lisp.Sexpr =
             match instructions with
                 | [] -> match data with
                         | result::_ -> result
                         | [] -> Lisp.Atom Lisp.Nil
                 | instr::rest ->
-                    let (newScope, newInstructions, newData) = evalInstruction scope instr data
-                    loop newScope (List.append newInstructions rest) newData
-        loop scope [Lisp.EvalSexpr sexpr] []
+                    let (instructions, data) = evalInstruction instr data
+                    loop (List.append instructions rest) data
+        loop [Lisp.EvalSexpr (sexpr, scope)] []
