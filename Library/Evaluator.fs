@@ -96,14 +96,18 @@ module Evaluator =
                         let (args, rest) = List.splitAt nargs data.Tail
                         let instructions = List.fold (fun acc it -> (Lisp.EvalSexpr (it, scope))::acc) [Lisp.EvalFunction (f, nargs, scope)] args
                         instructions, rest
+                    | Some (Lisp.Atom (Lisp.Macro f)) ->
+                        [Lisp.EvalFunction (f, nargs, scope)
+                         Lisp.EvalTop (1, scope)]
+                        , data.Tail
                     | Some (Lisp.Atom (Lisp.Primitive p)) ->
                         let (args, rest) = List.splitAt nargs data.Tail
                         let instructions = List.fold (fun acc it -> (Lisp.EvalSexpr (it, scope))::acc) [Lisp.EvalPrimitive (p, nargs)] args
                         instructions, rest
                     | Some (Lisp.Atom (Lisp.SpecialForm f)) ->
                         [Lisp.EvalSpecialForm(f, nargs, scope)], data.Tail
-                    | Some i ->
-                        [], [Lisp.Atom (Lisp.Error $"{i} is not a primitive nor a special form")]
+                    | Some top ->
+                        [Lisp.EvalSexpr (top, scope)], data.Tail
                     | _ ->
                         [], [Lisp.Atom(Lisp.Error "eval called on an empty stack")]
 

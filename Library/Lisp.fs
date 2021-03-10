@@ -14,6 +14,7 @@ module Lisp =
         | Symbol of Symbol
         // Not readable:
         | Function of Function
+        | Macro of Function
         | Primitive of Primitive
         | SpecialForm of SpecialForm
         | Error of string

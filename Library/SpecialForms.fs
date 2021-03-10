@@ -17,10 +17,11 @@ module SpecialForms =
         scope, [], args
 
     let internal clo = Lisp.Atom (Lisp.Symbol "clo")
+    let internal mac = Lisp.Atom (Lisp.Symbol "mac")
 
     let lit (scope : Lisp.Scope) (args : Lisp.DataStack) : Lisp.SpecialFormResult =
         match args with
-            | clo::env::(Lisp.Sexpr parameters)::[body] ->
+            | typ::env::(Lisp.Sexpr parameters)::[body] when typ = clo || typ = mac ->
                 let fScope = match env with
                              | Lisp.Sexpr env -> Lisp.alistToEnvironment env
                              | _ -> Map.empty
@@ -31,8 +32,11 @@ module SpecialForms =
                                  |> List.map (fun it -> match it with
                                                         | Lisp.Atom (Lisp.Symbol s) -> s
                                                         | _ -> "")
+                let cons = match typ with
+                           | Lisp.Atom (Lisp.Symbol "mac") -> Lisp.Macro
+                           | _ -> Lisp.Function
                 scope, [], [
-                    Lisp.Atom (Lisp.Function {
+                    Lisp.Atom (cons {
                         Scope = fScope
                         Parameters = parameters
                         Body = body

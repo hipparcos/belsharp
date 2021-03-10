@@ -10,6 +10,7 @@ module Printer =
         | Lisp.Number n -> string n
         | Lisp.Symbol s -> s
         | Lisp.Function f -> $"(lit clo nil {f.parameterList} {f.Body}"
+        | Lisp.Macro f -> $"(lit mac nil {f.parameterList} {f.Body}"
         | Lisp.Primitive p -> $"(lit prim {p.Name})"
         | Lisp.SpecialForm f -> $"(lit form {f.Name})"
         | Lisp.Error err -> $"Error: {err}"
@@ -37,8 +38,8 @@ module Printer =
                  PrintingList list;
                  PrintingChar ")"]
 
-    let internal generatePrintingOpsForFunction (f : Lisp.Function) : PrintingOp list =
-        [PrintingChar "(lit clo "] @
+    let internal generatePrintingOpsForFunction (f : Lisp.Function) typ : PrintingOp list =
+        [PrintingChar $"(lit {typ} "] @
         generatePrintingOps (Lisp.environmentToAList f.Scope) @
         [PrintingChar " "] @
         generatePrintingOps f.parameterList @
@@ -54,7 +55,10 @@ module Printer =
                 let op = ops.Head
                 match op with
                     | PrintingAtom (Lisp.Function f) ->
-                        loop (List.append (generatePrintingOpsForFunction f)
+                        loop (List.append (generatePrintingOpsForFunction f "clo")
+                                           ops.Tail)
+                    | PrintingAtom (Lisp.Macro f) ->
+                        loop (List.append (generatePrintingOpsForFunction f "mac")
                                            ops.Tail)
                     | PrintingAtom a ->
                         builder.Append(AtomToString a) |> ignore
