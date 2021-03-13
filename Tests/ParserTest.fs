@@ -86,24 +86,42 @@ let tests =
         testCase "it should throw unexpected closing parenthesis" <| fun _ ->
             let input = ")"
             let got = Parser.parse input
-            let want = "unexpected closing parenthesis"
+            let want = "Error in Ln: 1 Col: 1
+)
+^
+Expecting: atom, end of input, list or pair
+"
             Expect.wantError "error" got |> Expect.equal "equality" want
 
         testCase "it should throw unclosed list error" <| fun _ ->
             let input = "(symbol"
             let got = Parser.parse input
-            let want = "unclosed pair"
+            let want = "Error in Ln: 1 Col: 8
+(symbol
+       ^
+Note: The error occurred at the end of the input stream.
+Expecting: atom, list, pair or ')'
+"
             Expect.wantError "error" got |> Expect.equal "equality" want
 
         testCase "it should throw unclosed pair error" <| fun _ ->
             let input = "(symbol ."
             let got = Parser.parse input
-            let want = "unclosed pair"
+            let want = "Error in Ln: 1 Col: 10
+(symbol .
+         ^
+Note: The error occurred at the end of the input stream.
+Expecting: atom, list or pair
+"
             Expect.wantError "error" got |> Expect.equal "equality" want
 
         testCase "it should throw trailing element in pair" <| fun _ ->
             let input = "(sym1 . sym2 sym3"
             let got = Parser.parse input
-            let want = "trailing object in pair"
+            let want = "Error in Ln: 1 Col: 14
+(sym1 . sym2 sym3
+             ^
+Expecting: ')'
+"
             Expect.wantError "error" got |> Expect.equal "equality" want
     ]
