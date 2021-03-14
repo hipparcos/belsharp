@@ -16,6 +16,8 @@ module Parser =
 
     let internal dot = pstring "." .>> ws
 
+    let internal quote = pstring "'" <?> "quote"
+
     let internal number = pint64 .>> ws |>> (int >> Number)
 
     let internal nil =
@@ -48,8 +50,16 @@ module Parser =
         between lparen rparen (many1 sexpr) <?> "list"
         |>> Sexpr
 
+    let internal quoted =
+        quote >>. sexpr
+        |>> fun s -> Sexpr [
+            Atom (Symbol "quote")
+            s
+        ]
+
     do sexprRef :=
-            atom
+            quoted
+        <|> atom
         <|> pair
         <|> list
 

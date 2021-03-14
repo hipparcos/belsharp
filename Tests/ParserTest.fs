@@ -83,13 +83,22 @@ let tests =
                                         Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "sym3")]]]
             Expect.wantOk "ok" got |> Expect.equal "equality" want
 
+        testCase "it should quote the list" <| fun _ ->
+            let input = "'(1 2 3)"
+            let got = Parser.parse input
+            let want = Lisp.Sexpr [Lisp.Atom (Lisp.Symbol "quote");
+                            Lisp.Sexpr [Lisp.Atom (Lisp.Number 1)
+                                        Lisp.Atom (Lisp.Number 2)
+                                        Lisp.Atom (Lisp.Number 3)]]
+            Expect.wantOk "ok" got |> Expect.equal "equality" want
+
         testCase "it should throw unexpected closing parenthesis" <| fun _ ->
             let input = ")"
             let got = Parser.parse input
             let want = "Error in Ln: 1 Col: 1
 )
 ^
-Expecting: atom, end of input, list or pair
+Expecting: atom, end of input, list, pair or quote
 "
             Expect.wantError "error" got |> Expect.equal "equality" want
 
@@ -100,7 +109,7 @@ Expecting: atom, end of input, list or pair
 (symbol
        ^
 Note: The error occurred at the end of the input stream.
-Expecting: atom, list, pair or ')'
+Expecting: atom, list, pair, quote or ')'
 "
             Expect.wantError "error" got |> Expect.equal "equality" want
 
@@ -111,7 +120,7 @@ Expecting: atom, list, pair or ')'
 (symbol .
          ^
 Note: The error occurred at the end of the input stream.
-Expecting: atom, list or pair
+Expecting: atom, list, pair or quote
 "
             Expect.wantError "error" got |> Expect.equal "equality" want
 
