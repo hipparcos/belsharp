@@ -4,39 +4,41 @@ namespace Library
 /// rules (left to right, depth first) but can not be defined in Bel
 /// itself.
 module Primitives =
+    
+    open Lisp
 
     /// add: add numbers.
-    let add (args : Lisp.Sexpr list) : Lisp.Sexpr =
+    let add (args : Sexpr list) : Sexpr =
         args
         |> List.map (fun s -> match s with
-                                  | Lisp.Atom (Lisp.Number n) -> n
+                                  | Atom (Number n) -> n
                                   | _ -> 0)
         |> List.sum
-        |> Lisp.Number
-        |> Lisp.Atom
+        |> Number
+        |> Atom
 
     /// mul: multiply numbers.
-    let mul (args : Lisp.Sexpr list) : Lisp.Sexpr =
+    let mul (args : Sexpr list) : Sexpr =
         args
         |> List.map (fun s -> match s with
-                                  | Lisp.Atom (Lisp.Number n) -> n
+                                  | Atom (Number n) -> n
                                   | _ -> 1)
         |> List.fold (*) 1
-        |> Lisp.Number
-        |> Lisp.Atom
+        |> Number
+        |> Atom
 
     /// car: return the car of a list / pair.
-    let car (stack : Lisp.Sexpr list) : Lisp.Sexpr =
+    let car (stack : Sexpr list) : Sexpr =
         match stack.Head with
-            | Lisp.Sexpr [] -> Lisp.Atom Lisp.Nil
-            | Lisp.Sexpr (it::_) -> it
-            | Lisp.Pair (it, _) -> it
-            | _ -> Lisp.Atom Lisp.Nil
+            | Sexpr [] -> Atom Nil
+            | Sexpr (it::_) -> it
+            | Pair (it, _) -> it
+            | _ -> Atom Nil
 
     /// cdr: return the cdr of a list / pair.
-    let cdr (stack : Lisp.Sexpr list) : Lisp.Sexpr =
+    let cdr (stack : Sexpr list) : Sexpr =
         match stack.Head with
-            | Lisp.Sexpr [] -> Lisp.Atom Lisp.Nil
-            | Lisp.Sexpr (_::it) -> Lisp.Sexpr it
-            | Lisp.Pair (_, it) -> it
-            | _ -> Lisp.Atom Lisp.Nil
+            | Sexpr [] -> Atom Nil
+            | Sexpr (_::it) -> Sexpr it
+            | Pair (_, it) -> it
+            | _ -> Atom Nil

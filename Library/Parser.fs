@@ -1,7 +1,5 @@
 namespace Library
 
-open System
-
 // Parser uses the FParsec parser combinator library to parse the input.
 module Parser =
 
@@ -31,7 +29,7 @@ module Parser =
     let internal symbol =
         let isSymbolFirstChar c = isLetter c || isSpecial c
         let isSymbolChar c = isSymbolFirstChar c || isDigit c
-        many1Satisfy2 isSymbolFirstChar isSymbolChar .>> ws |>> Symbol
+        many1Satisfy2 isSymbolFirstChar isSymbolChar .>> ws |>> (Sym >> Symbol)
 
     let internal atom =
             number
@@ -53,7 +51,7 @@ module Parser =
     let internal quoted =
         quote >>. sexpr
         |>> fun s -> Sexpr [
-            Atom (Symbol "quote")
+            Atom (Symbol (Sym "quote"))
             s
         ]
 

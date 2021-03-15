@@ -4,7 +4,7 @@ namespace Library
 module Lisp =
 
     /// Symbol: it's just a string really.
-    type Symbol = string
+    type Symbol = Sym of string
 
     /// Atom: the leaf of S-expressions.
     type Atom =
@@ -27,33 +27,33 @@ module Lisp =
         | Pair of Sexpr * Sexpr
         | Sexpr of Sexpr list
 
-    /// Environment: a collection of bindings.
+    /// Environment: a set of bindings.
     and Environment = Map<Symbol, Sexpr>
 
-    /// Bindings: a collection of stacks of bindings for dynamic variables.
-    and Bindings = Map<Symbol, Sexpr list>
+    and Dynamic = Dynamic of Environment * option<Dynamic ref>
+    and Global = Global of Environment
+    and Lexical = Lexical of Environment * option<Lexical ref>
 
-    /// Scope: a set of bindings.
     and Scope =
-        { Dynamic: Bindings
-          Global: Environment
-          Lexical: Environment }
+        { Dynamic: Dynamic ref
+          Global: Global ref
+          Lexical: Lexical ref }
 
     /// Instruction: the instructions of the VM.
     /// Declared here because of cyclic dependencies.
     and Instruction =
-        | EvalSexpr of Sexpr * Scope
-        | EvalTop of nargs:int * Scope
-        | EvalFunction of Function * nargs:int * Scope
-        | EvalPrimitive of Primitive * nargs:int
-        | EvalSpecialForm of SpecialForm * nargs:int * Scope
+        | EvalSexpr of Sexpr * Lexical ref
+        | EvalTop of nargs:int * Lexical ref
+        | CallFunction of Function * nargs:int
+        | CallPrimitive of Primitive * nargs:int
+        | CallSpecialForm of SpecialForm * nargs:int * Lexical ref
 
     and DataStack = Sexpr list
 
     and EvalStack = Instruction list
 
     and Function =
-        { Scope: Environment
+        { Environment: Lexical ref
           Parameters: Symbol list
           Body: Sexpr }
 
@@ -99,14 +99,23 @@ module Lisp =
 
         override x.GetHashCode() = hash (x.Name)
 
-    let environmentToAList (env : Environment) : Sexpr =
+    let environmentToAList (env : Environment) : Sexpr list =
         Map.fold (fun acc s v ->
                       (Pair (Symbol s |> Atom, v))::acc)
                  [] env
-        |> Sexpr
 
     let alistToEnvironment (env : Sexpr list) : Environment =
         List.fold (fun env it -> match it with
                                  | Pair (Atom (Symbol s), v) -> env.Add(s, v)
                                  | _ -> env)
                   Map.empty env
+
+    let internal globeToAlist (Global g) = (environmentToAList >> Sexpr) g
+
+    let rec internal scopeToAlist env =
+        let rec toAlist (Lexical (l,prev)) =
+            List.append (environmentToAList l)
+                        (match prev with
+                         | Some p -> toAlist !p
+                         | None -> [])
+        toAlist env |> Sexpr

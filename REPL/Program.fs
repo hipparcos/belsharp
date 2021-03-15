@@ -12,7 +12,7 @@ let read (prompt : string) parser =
 
 /// tryReadSexpr: a Sexpr parser that uses the Reader from Library.
 let tryReadSexpr str : bool * Lisp.Sexpr option =
-    match (Reader.Read str) with
+    match (Reader.read str) with
         | Ok sexpr -> true, Some sexpr
         | Error err -> printfn "%s" err ; false, None
 
@@ -24,11 +24,12 @@ let main argv =
     )
     // REPL 'loop'
     printfn "%s" banner
+    let mutable globe = Evaluator.defaultGlobe
     for sexpr in (read prompt tryReadSexpr) do
         match sexpr with
-            | Some sexpr -> sexpr
-                            |> Evaluator.Eval Evaluator.DefaultScope
-                            |> Printer.Print
-                            |> printfn "%s"
+            | Some sexpr ->
+                let scope, result = Evaluator.eval Evaluator.defaultGlobe sexpr
+                Printer.print result |> printfn "%s"
+                globe <- scope
             | None -> ()
     0

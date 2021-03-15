@@ -1,47 +1,44 @@
 namespace Library
 
-open System
-
 /// Special forms are forns that does not evaluate as per function
 /// evaluation rules. An example is the `if` form which does not
 /// evaluate all of its branches.
 module SpecialForms =
 
-    let globe (scope : Lisp.Scope) (args : Lisp.DataStack) : Lisp.SpecialFormResult =
-        scope, [], [Lisp.environmentToAList scope.Global]
+    open Lisp
 
-    let scope (scope : Lisp.Scope) (args : Lisp.DataStack) : Lisp.SpecialFormResult =
-        scope, [], [Lisp.environmentToAList scope.Lexical]
-
-    let quote (scope : Lisp.Scope) (args : Lisp.DataStack) : Lisp.SpecialFormResult =
+    let quote (scope : Scope) (args : DataStack) : SpecialFormResult =
         scope, [], args
 
-    let internal clo = Lisp.Atom (Lisp.Symbol "clo")
-    let internal mac = Lisp.Atom (Lisp.Symbol "mac")
+    let stringAsSymbol = Sym >> Symbol >> Atom
+    let internal symClo = stringAsSymbol "clo"
+    let internal symLit = stringAsSymbol "lit"
+    let internal symMac = stringAsSymbol "mac"
 
-    let lit (scope : Lisp.Scope) (args : Lisp.DataStack) : Lisp.SpecialFormResult =
+    let lit (scope : Scope) (args : DataStack) : SpecialFormResult =
         match args with
-            | typ::env::(Lisp.Sexpr parameters)::[body] when typ = clo || typ = mac ->
-                let fScope = match env with
-                             | Lisp.Sexpr env -> Lisp.alistToEnvironment env
-                             | _ -> Map.empty
+            | typ::env::(Sexpr parameters)::[body] when typ = symClo || typ = symMac ->
+                let env = match env with
+                          | Atom (Symbol (Sym "scope")) ->
+                              scope.Lexical
+                          | Sexpr env ->
+                              ref (Lexical (alistToEnvironment env, Some scope.Lexical))
+                          | _ ->
+                              ref (Lexical (Map.empty, Some scope.Lexical))
                 let parameters = parameters
                                  |> List.filter (fun it -> match it with
-                                                           | Lisp.Atom (Lisp.Symbol _) -> true
+                                                           | Atom (Symbol _) -> true
                                                            | _ -> false)
                                  |> List.map (fun it -> match it with
-                                                        | Lisp.Atom (Lisp.Symbol s) -> s
-                                                        | _ -> "")
-                let cons = match typ with
-                           | Lisp.Atom (Lisp.Symbol "mac") -> Lisp.Macro
-                           | _ -> Lisp.Function
+                                                        | Atom (Symbol s) -> s
+                                                        | _ -> Sym "")
+                let cons = if typ = symMac then Macro else Function
                 scope, [], [
-                    Lisp.Atom (cons {
-                        Scope = fScope
+                    Atom (cons {
+                        Environment = env
                         Parameters = parameters
                         Body = body
                     })
                 ]
             | _ ->
-                let l = Lisp.Symbol "lit" |> Lisp.Atom
-                scope, [], [Lisp.Sexpr (l::args)]
+                scope, [], [Sexpr (symLit::args)]

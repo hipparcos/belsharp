@@ -3,61 +3,63 @@ namespace Library
 open System
 
 module Printer =
+    
+    open Lisp
 
     /// AtomToString: for debugging, will be implemented by the printer.
     let AtomToString = function
-        | Lisp.Nil -> "nil"
-        | Lisp.Number n -> string n
-        | Lisp.Symbol s -> s
-        | Lisp.Function f -> $"(lit clo nil {f.parameterList} {f.Body}"
-        | Lisp.Macro f -> $"(lit mac nil {f.parameterList} {f.Body}"
-        | Lisp.Primitive p -> $"(lit prim {p.Name})"
-        | Lisp.SpecialForm f -> $"(lit form {f.Name})"
-        | Lisp.Error err -> $"Error: {err}"
+        | Nil -> "nil"
+        | Number n -> string n
+        | Symbol (Sym s) -> s
+        | Function f -> $"(lit clo nil {f.parameterList} {f.Body}"
+        | Macro f -> $"(lit mac nil {f.parameterList} {f.Body}"
+        | Primitive p -> $"(lit prim {p.Name})"
+        | SpecialForm f -> $"(lit form {f.Name})"
+        | Error err -> $"Error: {err}"
 
     type internal PrintingOp =
-        | PrintingAtom of Lisp.Atom
+        | PrintingAtom of Atom
         | PrintingChar of string
-        | PrintingList of Lisp.Sexpr list
-        | PrintingSexpr of Lisp.Sexpr
+        | PrintingList of Sexpr list
+        | PrintingSexpr of Sexpr
 
-    let internal generatePrintingOps (sexpr : Lisp.Sexpr) : PrintingOp list =
+    let internal generatePrintingOps (sexpr : Sexpr) : PrintingOp list =
         match sexpr with
-            | Lisp.Atom a ->
+            | Atom a ->
                 [PrintingAtom a]
-            | Lisp.Pair (car, cdr) ->
+            | Pair (car, cdr) ->
                 [PrintingChar "(";
                  PrintingSexpr car;
                  PrintingChar " . ";
                  PrintingSexpr cdr;
                  PrintingChar ")"]
-            | Lisp.Sexpr [] ->
-                [PrintingAtom Lisp.Nil]
-            | Lisp.Sexpr list ->
+            | Sexpr [] ->
+                [PrintingAtom Nil]
+            | Sexpr list ->
                 [PrintingChar "(";
                  PrintingList list;
                  PrintingChar ")"]
 
-    let internal generatePrintingOpsForFunction (f : Lisp.Function) typ : PrintingOp list =
+    let internal generatePrintingOpsForFunction (f : Function) typ : PrintingOp list =
         [PrintingChar $"(lit {typ} "] @
-        generatePrintingOps (Lisp.environmentToAList f.Scope) @
+        generatePrintingOps (scopeToAlist !f.Environment) @
         [PrintingChar " "] @
         generatePrintingOps f.parameterList @
         [PrintingChar " "] @
         generatePrintingOps f.Body @
         [PrintingChar ")"]
 
-    let SexprToString (sexpr : Lisp.Sexpr) : string =
+    let SexprToString (sexpr : Sexpr) : string =
         let builder = Text.StringBuilder()
         let rec loop (ops : PrintingOp list) : unit =
             if ops.IsEmpty then ()
             else
                 let op = ops.Head
                 match op with
-                    | PrintingAtom (Lisp.Function f) ->
+                    | PrintingAtom (Function f) ->
                         loop (List.append (generatePrintingOpsForFunction f "clo")
                                            ops.Tail)
-                    | PrintingAtom (Lisp.Macro f) ->
+                    | PrintingAtom (Macro f) ->
                         loop (List.append (generatePrintingOpsForFunction f "mac")
                                            ops.Tail)
                     | PrintingAtom a ->
@@ -80,5 +82,5 @@ module Printer =
         loop (generatePrintingOps sexpr)
         builder.ToString()
 
-    let Print (sexpr : Lisp.Sexpr) : string =
+    let print (sexpr : Sexpr) : string =
         SexprToString sexpr

@@ -11,6 +11,7 @@
     <Compile Include="ParserTest.fs" />
     <Compile Include="PrimitivesTest.fs" />
     <Compile Include="PrinterTest.fs" />
+    <Compile Include="EndToEndTEst.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
