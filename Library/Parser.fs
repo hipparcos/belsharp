@@ -63,8 +63,9 @@ module Parser =
 
     /// Parse: parse stream of TOKENS, return a Sexpr.
     let parse (input : string) : Result<Sexpr, string> =
-        let got = run (ws >>. opt sexpr .>> eof) input
+        let got = run (ws >>. opt (many1 sexpr) .>> eof) input
         match got with
-        | Success (Some result,_,_) -> Result.Ok result
+        | Success (Some [result],_,_) -> Result.Ok result
+        | Success (Some result,_,_) -> Result.Ok (Sexpr ((Atom (Symbol (Sym "do")))::result))
         | Success (None,_,_) -> Result.Ok (Atom Nil)
         | Failure (err,_,_) -> Result.Error err
