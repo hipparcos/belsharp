@@ -28,7 +28,7 @@ let main argv =
     for sexpr in (read prompt tryReadSexpr) do
         match sexpr with
             | Some sexpr ->
-                let scope, result = Evaluator.eval Evaluator.defaultGlobe sexpr
+                let scope, result = Evaluator.eval globe sexpr
                 Printer.print result |> printfn "%s"
                 globe <- scope
             | None -> ()

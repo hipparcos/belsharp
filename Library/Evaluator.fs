@@ -4,6 +4,7 @@ namespace Library
 module Evaluator =
 
     open Lisp
+    open Environments
 
     let defPrim n p =
         { Primitive.Name = n
@@ -11,9 +12,10 @@ module Evaluator =
         |> Primitive
         |> Atom
 
-    let defForm n f =
+    let defForm n f e =
         { SpecialForm.Name = n
-          SpecialForm.Func = f }
+          SpecialForm.Func = f
+          SpecialForm.EvalArgs = e }
         |> SpecialForm
         |> Atom
 
@@ -25,48 +27,15 @@ module Evaluator =
            .Add(Sym "*", defPrim "*" Primitives.mul)
            .Add(Sym "car", defPrim "car" Primitives.car)
            .Add(Sym "cdr", defPrim "cdr" Primitives.cdr)
-           .Add(Sym "lit", defForm "lit" SpecialForms.lit)
-           .Add(Sym "quote", defForm "quote" SpecialForms.quote)
+           .Add(Sym "lit", defForm "lit" SpecialForms.lit false)
+           .Add(Sym "quote", defForm "quote" SpecialForms.quote false)
+           .Add(Sym "set", defForm "set" SpecialForms.set true)
         |> Global
 
-    let internal emptyScope =
+    let emptyScope =
         { Dynamic = ref (Dynamic (Map.empty, None))
           Global = ref (Global Map.empty)
           Lexical = ref (Lexical (Map.empty, None)) }
-
-    let rec internal lookupDynamic s (Dynamic (d,prev)) =
-        match Map.tryFind s d with
-        | Some v -> Some v
-        | None ->
-            match prev with
-            | Some p -> lookupDynamic s !p
-            | None -> None
-
-    let internal lookupGlobal s (Global g) = Map.tryFind s g
-    
-    let rec internal lookupLexical s (Lexical (d,prev)) =
-        match Map.tryFind s d with
-        | Some v -> Some v
-        | None ->
-            match prev with
-            | Some p -> lookupLexical s !p
-            | None -> None
-
-    /// lookup: retrieve the value bound to a symbol in the current scope.
-    let lookup (sym: Symbol) (scope: Scope): Sexpr =
-        match sym with
-        | Sym "globe" -> globeToAlist !scope.Global
-        | Sym "scope" -> scopeToAlist !scope.Lexical
-        | _ ->
-            match (lookupDynamic sym !scope.Dynamic) with
-            | Some sexpr -> sexpr
-            | _ ->
-                match (lookupLexical sym !scope.Lexical) with
-                | Some sexpr -> sexpr
-                | None ->
-                    match (lookupGlobal sym !scope.Global) with
-                    | Some sexpr -> sexpr
-                    | None -> Atom Nil
 
     let internal evalSexpr scope sexpr: EvalStack * DataStack =
         match sexpr with
@@ -98,8 +67,11 @@ module Evaluator =
             let args, rest = splitStack stack nargs
             evalSexprInScope [CallPrimitive (p, nargs)] args, rest
         | Atom (SpecialForm f) ->
-            [ CallSpecialForm (f, nargs, scope.Lexical)
-            ], stack
+            if f.EvalArgs then
+                let args, rest = splitStack stack nargs
+                evalSexprInScope [CallSpecialForm (f, nargs, scope.Lexical)] args, rest
+            else
+                [CallSpecialForm (f, nargs, scope.Lexical)], stack
         | _ ->
             let err = sprintf "'%s' is not a function or special form" (Printer.print top)
             [], (Atom (Error err))::stack

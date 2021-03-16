@@ -6,6 +6,7 @@ namespace Library
 module SpecialForms =
 
     open Lisp
+    open Environments
 
     let quote (scope : Scope) (args : DataStack) : SpecialFormResult =
         scope, [], args
@@ -42,3 +43,16 @@ module SpecialForms =
                 ]
             | _ ->
                 scope, [], [Sexpr (symLit::args)]
+
+    let set (scope:Scope) (args:DataStack) : SpecialFormResult =
+        match args with
+        | (Atom (Symbol s))::v::_ ->
+            match setDynamic scope.Dynamic s v with
+            | Some _ -> ()
+            | None ->
+                match setLexical scope.Lexical s v with
+                | Some _ -> ()
+                | None -> setGlobal scope.Global s v
+            scope, [], [v]
+        | _ ->
+            scope, [], [Atom Nil]

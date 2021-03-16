@@ -1,5 +1,7 @@
 namespace Library
 
+open System
+
 /// Lisp data structures.
 module Lisp =
 
@@ -90,7 +92,8 @@ module Lisp =
     /// evaluate all of its branches.
     and [<CustomEquality; NoComparison>] SpecialForm =
         { Name: SpecialFormName
-          Func: SpecialFormFunc }
+          Func: SpecialFormFunc
+          EvalArgs: bool }
         
         override x.Equals(y) =
             match y with

@@ -24,4 +24,12 @@ let tests =
             let _, got = evalFromString defaultGlobe input
             let want = "6"
             Expect.equal got want "the sum should be 6"
+
+        testCase "it should set x then return it" <| fun _ ->
+            let input =
+                [ "(set 'x 42)"
+                  "x" ]
+            let _, got = evalFromStrings defaultGlobe input
+            let want = "42"
+            Expect.equal got want "the result should be 42"
     ]
