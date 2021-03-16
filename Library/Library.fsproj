@@ -13,6 +13,7 @@
     <Compile Include="Primitives.fs" />
     <Compile Include="SpecialForms.fs" />
     <Compile Include="Evaluator.fs" />
+    <Compile Include="StdLib.fs" />
   </ItemGroup>
 
   <ItemGroup>

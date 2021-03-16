@@ -1,6 +1,7 @@
 ﻿module Tests.EndToEndT
 
 open Expecto
+open Library
 open Library.Lisp
 open Library.Evaluator
 open Library.Printer
@@ -67,4 +68,20 @@ let tests =
             let _, got = evalFromString defaultGlobe input
             let want = "3"
             Expect.equal got want "the result should be 3, not 1"
+
+        testCase "it should def then eval a function" <| fun _ ->
+            let input =
+                [ "(def double (x) (* 2 x))"
+                  "(double 21)" ]
+            let _, got = evalFromStrings (StdLib.loadInUnsafe defaultGlobe) input
+            let want = "42"
+            Expect.equal got want "the result should be 42"
+
+        testCase "it should def then eval a macro" <| fun _ ->
+            let input =
+                [ "(mac thrice (e) (list 'do e e e))"
+                  "(thrice (set 'x (+ x 1)))" ]
+            let _, got = evalFromStrings (StdLib.loadInUnsafe defaultGlobe) input
+            let want = "3"
+            Expect.equal got want "the result should be 3 as the set form is executed multiple times"
     ]

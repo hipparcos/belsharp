@@ -25,6 +25,9 @@ let main argv =
     // REPL 'loop'
     printfn "%s" banner
     let mutable globe = Evaluator.defaultGlobe
+    match StdLib.loadIn globe with
+        | Ok (loaded,_) -> globe <- loaded
+        | Error err -> failwith err
     for sexpr in (read prompt tryReadSexpr) do
         match sexpr with
             | Some sexpr ->
