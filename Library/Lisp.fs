@@ -1,7 +1,5 @@
 namespace Library
 
-open System
-
 /// Lisp data structures.
 module Lisp =
 
@@ -44,9 +42,9 @@ module Lisp =
     /// Instruction: the instructions of the VM.
     /// Declared here because of cyclic dependencies.
     and Instruction =
-        | EvalSexpr of Sexpr * Lexical ref
-        | EvalTop of nargs:int * Lexical ref
-        | CallFunction of Function * nargs:int
+        | EvalSexpr of Sexpr * Dynamic ref * Lexical ref
+        | EvalTop of nargs:int * Dynamic ref * Lexical ref
+        | CallFunction of Function * nargs:int * Dynamic ref
         | CallPrimitive of Primitive * nargs:int
         | CallSpecialForm of SpecialForm * nargs:int * Lexical ref
 

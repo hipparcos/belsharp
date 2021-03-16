@@ -14,6 +14,26 @@ module SpecialForms =
     let quote (scope : Scope) (args : DataStack) : SpecialFormResult =
         scope, [], args
 
+    let dyn (scope:Scope) (args:DataStack) : SpecialFormResult =
+        match args with
+        | (Atom (Symbol s))::v::[body] ->
+            let dyn = ref (Dynamic (Map.empty, Some scope.Dynamic))
+            let setDyn (scope:Scope) (args:DataStack) =
+                match !dyn with
+                | Dynamic (env, prev) -> dyn := Dynamic (env.Add(s, args.Head), prev)
+                scope, [], []
+            let form =
+                { SpecialForm.Name = "dyn-internal"
+                  SpecialForm.Func = setDyn
+                  SpecialForm.EvalArgs = false }
+            scope, [
+                EvalSexpr (v, scope.Dynamic, scope.Lexical)
+                CallSpecialForm (form, 1, scope.Lexical)
+                EvalSexpr (body, dyn, scope.Lexical)
+            ], []
+        | _ ->
+            scope, [], [Atom Nil]
+
     let set (scope:Scope) (args:DataStack) : SpecialFormResult =
         match args with
         | (Atom (Symbol s))::v::_ ->
@@ -34,6 +54,7 @@ module SpecialForms =
 
     let internal specialFormsWithoutLit : Map<Symbol, SpecialForm> =
         let forms = [
+            defForm "dyn" dyn false
             defForm "quote" quote false
             defForm "set" set true
         ]

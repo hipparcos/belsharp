@@ -31,7 +31,7 @@ module Environments =
     // litRef is an early declaration of the lit special form.
     let litRef : SpecialForm ref =
         ref { Name = "litRef"
-              Func = fun s d -> failwith "litRef must be defined in SpecialForms.fs"
+              Func = fun _ _ -> failwith "litRef must be defined in SpecialForms.fs"
               EvalArgs = false }
 
     /// lookup: retrieve the value bound to a symbol in the current scope.

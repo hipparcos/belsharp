@@ -30,12 +30,12 @@ module Evaluator =
         | Atom (Symbol s) ->
             [], [lookup s scope]
         | Pair (car, cdr) ->
-            [ EvalSexpr (car, scope.Lexical)
-              EvalTop (1, scope.Lexical) ]
+            [ EvalSexpr (car, scope.Dynamic, scope.Lexical)
+              EvalTop (1, scope.Dynamic, scope.Lexical) ]
             , [cdr]
         | Sexpr (car :: cdr) ->
-            [ EvalSexpr (car, scope.Lexical)
-              EvalTop (List.length cdr, scope.Lexical) ]
+            [ EvalSexpr (car, scope.Dynamic, scope.Lexical)
+              EvalTop (List.length cdr, scope.Dynamic, scope.Lexical) ]
             , cdr
         | _ -> [], [sexpr]
 
@@ -43,13 +43,13 @@ module Evaluator =
 
     let internal evalTop scope top nargs stack: EvalStack * DataStack =
         let evalSexprInScope init args =
-            List.fold (fun acc it -> (EvalSexpr (it, scope.Lexical))::acc) init args
+            List.fold (fun acc it -> (EvalSexpr (it, scope.Dynamic, scope.Lexical))::acc) init args
         match top with
         | Atom (Function f) ->
             let args, rest = splitStack stack nargs
-            evalSexprInScope [CallFunction (f, nargs)] args, rest
+            evalSexprInScope [CallFunction (f, nargs, scope.Dynamic)] args, rest
         | Atom (Macro f) ->
-            [ CallFunction (f, nargs)
+            [ CallFunction (f, nargs, scope.Dynamic)
             ], stack
         | Atom (Primitive p) ->
             let args, rest = splitStack stack nargs
@@ -64,7 +64,7 @@ module Evaluator =
             let err = sprintf "'%s' is not a function or special form" (Printer.print top)
             [], (Atom (Error err))::stack
 
-    let internal callFunction (func:Function) args: Instruction =
+    let internal callFunction scope (func:Function) args: Instruction =
         let rec setArgsInScope (env:Environment) parameters values =
             match parameters with
             | [] -> env
@@ -73,8 +73,8 @@ module Evaluator =
                             | [] -> Atom Nil, []
                             | v::vs -> v, vs
                 setArgsInScope (env.Add(p, v)) ps vs
-        let scope = setArgsInScope Map.empty func.Parameters args
-        EvalSexpr (func.Body, ref (Lexical (scope,Some func.Environment)))
+        let lex = setArgsInScope Map.empty func.Parameters args
+        EvalSexpr (func.Body, scope.Dynamic, ref (Lexical (lex,Some func.Environment)))
 
     let internal callPrimitive (prim:Primitive) args: Sexpr =
         prim.Func args
@@ -84,20 +84,20 @@ module Evaluator =
 
     let internal evalInstruction scope instr (data:DataStack): Scope * EvalStack * DataStack =
         match instr with
-        | EvalSexpr (sexpr, lexical) ->
-            let newI, newD = evalSexpr {scope with Lexical = lexical} sexpr
+        | EvalSexpr (sexpr, dynamic, lexical) ->
+            let newI, newD = evalSexpr {scope with Dynamic = dynamic; Lexical = lexical} sexpr
             scope, newI, List.append newD data
-        | EvalTop (nargs, lexical) ->
+        | EvalTop (nargs, dynamic, lexical) ->
             match data with
             | [] ->
                 let err = sprintf "evaluation stack is empty"
                 scope, [], [Atom (Error err)]
             | top::rest ->
-                let newI, newD = evalTop {scope with Lexical = lexical} top nargs rest
+                let newI, newD = evalTop {scope with Dynamic = dynamic; Lexical = lexical} top nargs rest
                 scope, newI, List.append newD rest
-        | CallFunction (f, nargs) ->
+        | CallFunction (f, nargs, dynamic) ->
             let args, rest = splitStack data nargs
-            let newI = callFunction f args
+            let newI = callFunction {scope with Dynamic = dynamic} f args
             scope, [newI], rest
         | CallPrimitive (p, nargs) ->
             let args, rest = splitStack data nargs
@@ -120,5 +120,5 @@ module Evaluator =
                     let scope, instructions, data = evalInstruction scope instr data
                     loop scope (List.append instructions rest) data
         loop {emptyScope with Global = ref globe}
-             [EvalSexpr (sexpr, emptyScope.Lexical)]
+             [EvalSexpr (sexpr, emptyScope.Dynamic, emptyScope.Lexical)]
              []

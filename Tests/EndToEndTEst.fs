@@ -41,4 +41,12 @@ let tests =
             let _, got = evalFromStrings defaultGlobe input
             let want = "84"
             Expect.equal got want "the result should be 84"
+
+        testCase "it should lookup the dynamic variable" <| fun _ ->
+            let input =
+                [ "(set 'double (lit clo nil (x) (* 2 x)))"
+                  "(dyn x 21 (double 101))" ]
+            let _, got = evalFromStrings defaultGlobe input
+            let want = "42"
+            Expect.equal got want "the result should be 42, not 202"
     ]
