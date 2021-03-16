@@ -77,4 +77,37 @@ let tests =
             let got = Primitives.cdr inp
             let want = Atom (Number 2)
             Expect.equal got want "the cdr should be 2"
+
+        testCase "it should create a list" <| fun _ ->
+            let inp = [Atom (Number 1)
+                       Atom (Number 2)
+                       Atom (Number 3)]
+            let got = Primitives.list inp
+            let want = Sexpr [Atom (Number 1)
+                              Atom (Number 2)
+                              Atom (Number 3)]
+            Expect.equal got want "it should create a list"
+
+        testCase "it should join creating a pair" <| fun _ ->
+            let inp = [Atom (Number 1)
+                       Atom (Number 2)]
+            let got = Primitives.join inp
+            let want = Pair (Atom (Number 1),
+                             Atom (Number 2))
+            Expect.equal got want "it should create a pair"
+
+        testCase "it should join creating a proper list" <| fun _ ->
+            let inp = [Atom (Number 1)
+                       Atom Nil]
+            let got = Primitives.join inp
+            let want = Sexpr [Atom (Number 1)]
+            Expect.equal got want "it should create a list"
+
+        testCase "it should join consing on a list" <| fun _ ->
+            let inp = [Atom (Number 1)
+                       Sexpr [Atom (Number 2)]]
+            let got = Primitives.join inp
+            let want = Sexpr [Atom (Number 1)
+                              Atom (Number 2)]
+            Expect.equal got want "it should create a list"
     ]

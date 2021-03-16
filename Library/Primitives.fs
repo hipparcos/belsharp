@@ -43,6 +43,16 @@ module Primitives =
             | Pair (_, it) -> it
             | _ -> Atom Nil
 
+    let list (stack : Sexpr list) : Sexpr =
+        Sexpr stack
+
+    let join (stack : Sexpr list) : Sexpr =
+        match stack with
+        | [car; Atom Nil] -> list [car]
+        | [car; Sexpr cdr] -> Sexpr (car::cdr)
+        | [car; cdr] -> Pair (car, cdr)
+        | _ -> Atom Nil
+
     let defPrim n p =
         { Primitive.Name = n
           Primitive.Func = p }
@@ -53,5 +63,7 @@ module Primitives =
             defPrim "*" mul
             defPrim "car" car
             defPrim "cdr" cdr
+            defPrim "join" join
+            defPrim "list" list
         ]
         List.fold (fun prims (p:Primitive) -> prims.Add(Sym p.Name, p)) Map.empty prims
