@@ -77,6 +77,15 @@ let tests =
             let want = "42"
             Expect.equal got want "the result should be 42"
 
+        testCase "it should def then eval a closure" <| fun _ ->
+            let input =
+                [ "(def counter (x) (fn () (set 'x (+ 1 x))))"
+                  "(set 'c1 (counter 39))"
+                  "(c1)(c1)(c1)" ]
+            let _, got = evalFromStrings (StdLib.loadInUnsafe defaultGlobe) input
+            let want = "42"
+            Expect.equal got want "the result should be 42 not 40"
+
         testCase "it should def then eval a macro" <| fun _ ->
             let input =
                 [ "(mac thrice (e) (list 'do e e e))"

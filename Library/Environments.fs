@@ -56,8 +56,8 @@ module Environments =
 
     let setDynamic (env:Dynamic ref) (sym:Symbol) (value:Sexpr) =
         let set (Dynamic (env,prev)) = Dynamic (env.Add(sym, value), prev)
-        findInDynamic (fun dyn _ -> env := set !dyn) sym env
+        findInDynamic (fun dyn _ -> dyn := set !dyn) sym env
 
     let setLexical (env:Lexical ref) (sym:Symbol) (value:Sexpr) =
         let set (Lexical (env,prev)) = Lexical (env.Add(sym, value), prev)
-        findInLexical (fun lex _ -> env := set !lex) sym env
+        findInLexical (fun lex _ -> lex := set !lex) sym env
