@@ -49,4 +49,22 @@ let tests =
             let _, got = evalFromStrings defaultGlobe input
             let want = "42"
             Expect.equal got want "the result should be 42, not 202"
+
+        testCase "it should nest dyn scopes" <| fun _ ->
+            let input = "(dyn x 1 (dyn x 2 x))"
+            let _, got = evalFromString defaultGlobe input
+            let want = "2"
+            Expect.equal got want "the result should be 2, not 1"
+
+        testCase "it should unnest dyn scopes" <| fun _ ->
+            let input = "(dyn x 1 (do (dyn x 2 x) x))"
+            let _, got = evalFromString defaultGlobe input
+            let want = "1"
+            Expect.equal got want "the result should be 1, not 2"
+
+        testCase "it should do, evaluates in order" <| fun _ ->
+            let input = "(do (set 'x 1) (set 'x (+ x 1)) (set 'x (+ x 1)))"
+            let _, got = evalFromString defaultGlobe input
+            let want = "3"
+            Expect.equal got want "the result should be 3, not 1"
     ]

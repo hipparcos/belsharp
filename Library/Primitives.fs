@@ -53,6 +53,11 @@ module Primitives =
         | [car; cdr] -> Pair (car, cdr)
         | _ -> Atom Nil
 
+    let progn (stack : Sexpr list) : Sexpr =
+        match List.tryLast stack with
+        | Some v -> v
+        | None -> Atom Nil
+
     let defPrim n p =
         { Primitive.Name = n
           Primitive.Func = p }
@@ -63,6 +68,7 @@ module Primitives =
             defPrim "*" mul
             defPrim "car" car
             defPrim "cdr" cdr
+            defPrim "do" progn
             defPrim "join" join
             defPrim "list" list
         ]

@@ -43,7 +43,9 @@ module Evaluator =
 
     let internal evalTop scope top nargs stack: EvalStack * DataStack =
         let evalSexprInScope init args =
-            List.fold (fun acc it -> (EvalSexpr (it, scope.Dynamic, scope.Lexical))::acc) init args
+            List.fold (fun acc it -> (EvalSexpr (it, scope.Dynamic, scope.Lexical))::acc)
+                init
+                (List.rev args)
         match top with
         | Atom (Function f) ->
             let args, rest = splitStack stack nargs
@@ -77,10 +79,10 @@ module Evaluator =
         EvalSexpr (func.Body, scope.Dynamic, ref (Lexical (lex,Some func.Environment)))
 
     let internal callPrimitive (prim:Primitive) args: Sexpr =
-        prim.Func args
+        prim.Func (List.rev args)
 
     let internal callSpecialForm (form:SpecialForm) args scope: Global * EvalStack * DataStack =
-        form.Func scope args
+        form.Func scope (if form.EvalArgs then List.rev args else args)
 
     let internal evalInstruction globe instr (data:DataStack): Global * EvalStack * DataStack =
         match instr with
