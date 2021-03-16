@@ -12,7 +12,7 @@ module SpecialForms =
     open Environments
 
     let quote (scope : Scope) (args : DataStack) : SpecialFormResult =
-        scope, [], args
+        scope.Global, [], args
 
     let dyn (scope:Scope) (args:DataStack) : SpecialFormResult =
         match args with
@@ -21,31 +21,31 @@ module SpecialForms =
             let setDyn (scope:Scope) (args:DataStack) =
                 match !dyn with
                 | Dynamic (env, prev) -> dyn := Dynamic (env.Add(s, args.Head), prev)
-                scope, [], []
+                scope.Global, [], []
             let form =
                 { SpecialForm.Name = "dyn-internal"
                   SpecialForm.Func = setDyn
                   SpecialForm.EvalArgs = false }
-            scope, [
+            scope.Global, [
                 EvalSexpr (v, scope.Dynamic, scope.Lexical)
-                CallSpecialForm (form, 1, scope.Lexical)
+                CallSpecialForm (form, 1, scope.Dynamic, scope.Lexical)
                 EvalSexpr (body, dyn, scope.Lexical)
             ], []
         | _ ->
-            scope, [], [Atom Nil]
+            scope.Global, [], [Atom Nil]
 
     let set (scope:Scope) (args:DataStack) : SpecialFormResult =
         match args with
         | (Atom (Symbol s))::v::_ ->
             match setDynamic scope.Dynamic s v with
-            | Some _ -> ()
+            | Some _ -> scope.Global
             | None ->
                 match setLexical scope.Lexical s v with
-                | Some _ -> ()
+                | Some _ -> scope.Global
                 | None -> setGlobal scope.Global s v
-            scope, [], [v]
+            , [], [v]
         | _ ->
-            scope, [], [Atom Nil]
+            scope.Global, [], [Atom Nil]
 
     let defForm n p e =
         { SpecialForm.Name = n
@@ -74,10 +74,10 @@ module SpecialForms =
                             let (Sym sym) = sym
                             let err = sprintf "no primitives names '%s'" sym
                             Atom (Error err)
-                scope, [], [v]
+                scope.Global, [], [v]
             | (Atom (Symbol (Sym "form")))::[(Atom (Symbol (Sym "lit")))] ->
                 let lit = !litRef |> SpecialForm |> Atom
-                scope, [], [lit]
+                scope.Global, [], [lit]
             | (Atom (Symbol (Sym "form")))::[(Atom (Symbol sym))] ->
                 let v = match specialFormsWithoutLit.TryFind sym with
                         | Some v -> Atom (SpecialForm v)
@@ -85,8 +85,8 @@ module SpecialForms =
                             let (Sym sym) = sym
                             let err = sprintf "no special forms names '%s'" sym
                             Atom (Error err)
-                scope, [], [v]
-            | typ::env::(Sexpr parameters)::[body] when typ = symClo || typ = symMac ->
+                scope.Global, [], [v]
+            | typ::env::parameters::[body] when typ = symClo || typ = symMac ->
                 let env = match env with
                           | Atom (Symbol (Sym "scope")) ->
                               scope.Lexical
@@ -94,15 +94,18 @@ module SpecialForms =
                               ref (Lexical (alistToEnvironment env, Some scope.Lexical))
                           | _ ->
                               ref (Lexical (Map.empty, Some scope.Lexical))
-                let parameters = parameters
-                                 |> List.filter (fun it -> match it with
-                                                           | Atom (Symbol _) -> true
-                                                           | _ -> false)
-                                 |> List.map (fun it -> match it with
-                                                        | Atom (Symbol s) -> s
-                                                        | _ -> Sym "")
+                let parameters = match parameters with
+                                 | Sexpr parameters ->
+                                     parameters
+                                     |> List.filter (fun it -> match it with
+                                                               | Atom (Symbol _) -> true
+                                                               | _ -> false)
+                                     |> List.map (fun it -> match it with
+                                                            | Atom (Symbol s) -> s
+                                                            | _ -> Sym "")
+                                 | _ -> []
                 let cons = if typ = symMac then Macro else Function
-                scope, [], [
+                scope.Global, [], [
                     Atom (cons {
                         Environment = env
                         Parameters = parameters
@@ -110,7 +113,7 @@ module SpecialForms =
                     })
                 ]
             | _ ->
-                scope, [], [Sexpr (symLit::args)]
+                scope.Global, [], [Sexpr (symLit::args)]
 
     do litRef := defForm "lit" lit false
     let specialForms = specialFormsWithoutLit.Add(Sym "lit", !litRef)

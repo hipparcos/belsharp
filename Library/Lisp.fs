@@ -36,7 +36,7 @@ module Lisp =
 
     and Scope =
         { Dynamic: Dynamic ref
-          Global: Global ref
+          Global: Global
           Lexical: Lexical ref }
 
     /// Instruction: the instructions of the VM.
@@ -46,7 +46,7 @@ module Lisp =
         | EvalTop of nargs:int * Dynamic ref * Lexical ref
         | CallFunction of Function * nargs:int * Dynamic ref
         | CallPrimitive of Primitive * nargs:int
-        | CallSpecialForm of SpecialForm * nargs:int * Lexical ref
+        | CallSpecialForm of SpecialForm * nargs:int * Dynamic ref * Lexical ref
 
     and DataStack = Sexpr list
 
@@ -83,7 +83,7 @@ module Lisp =
     
     and SpecialFormFunc = Scope -> DataStack -> SpecialFormResult
 
-    and SpecialFormResult = Scope * EvalStack * DataStack
+    and SpecialFormResult = Global * EvalStack * DataStack
     
     /// SpecialForm: forms that does not evaluate as per function
     /// evaluation rules. An example is the `if` form which does not

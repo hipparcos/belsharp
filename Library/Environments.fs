@@ -37,7 +37,7 @@ module Environments =
     /// lookup: retrieve the value bound to a symbol in the current scope.
     let lookup (sym: Symbol) (scope: Scope): Sexpr =
         match sym with
-        | Sym "globe" -> globeToAlist !scope.Global
+        | Sym "globe" -> globeToAlist scope.Global
         | Sym "scope" -> scopeToAlist !scope.Lexical
         | Sym "lit" -> Atom (SpecialForm !litRef)
         | _ ->
@@ -47,13 +47,12 @@ module Environments =
                 match (lookupLexical sym scope.Lexical) with
                 | Some sexpr -> sexpr
                 | None ->
-                    match (lookupGlobal sym !scope.Global) with
+                    match (lookupGlobal sym scope.Global) with
                     | Some sexpr -> sexpr
                     | None -> Atom Nil
 
-    let setGlobal (env:Global ref) (sym:Symbol) (value:Sexpr) =
-        let set (Global g) = Global (g.Add(sym, value))
-        env := set !env
+    let setGlobal (Global g) (sym:Symbol) (value:Sexpr) =
+        Global (g.Add(sym, value))
 
     let setDynamic (env:Dynamic ref) (sym:Symbol) (value:Sexpr) =
         let set (Dynamic (env,prev)) = Dynamic (env.Add(sym, value), prev)

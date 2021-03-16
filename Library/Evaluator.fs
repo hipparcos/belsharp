@@ -22,7 +22,7 @@ module Evaluator =
 
     let emptyScope =
         { Dynamic = ref (Dynamic (Map.empty, None))
-          Global = ref (Global Map.empty)
+          Global = Global Map.empty
           Lexical = ref (Lexical (Map.empty, None)) }
 
     let internal evalSexpr scope sexpr: EvalStack * DataStack =
@@ -57,9 +57,9 @@ module Evaluator =
         | Atom (SpecialForm f) ->
             if f.EvalArgs then
                 let args, rest = splitStack stack nargs
-                evalSexprInScope [CallSpecialForm (f, nargs, scope.Lexical)] args, rest
+                evalSexprInScope [CallSpecialForm (f, nargs, scope.Dynamic, scope.Lexical)] args, rest
             else
-                [CallSpecialForm (f, nargs, scope.Lexical)], stack
+                [CallSpecialForm (f, nargs, scope.Dynamic, scope.Lexical)], stack
         | _ ->
             let err = sprintf "'%s' is not a function or special form" (Printer.print top)
             [], (Atom (Error err))::stack
@@ -79,46 +79,44 @@ module Evaluator =
     let internal callPrimitive (prim:Primitive) args: Sexpr =
         prim.Func args
 
-    let internal callSpecialForm (form:SpecialForm) args scope: Scope * EvalStack * DataStack =
+    let internal callSpecialForm (form:SpecialForm) args scope: Global * EvalStack * DataStack =
         form.Func scope args
 
-    let internal evalInstruction scope instr (data:DataStack): Scope * EvalStack * DataStack =
+    let internal evalInstruction globe instr (data:DataStack): Global * EvalStack * DataStack =
         match instr with
         | EvalSexpr (sexpr, dynamic, lexical) ->
-            let newI, newD = evalSexpr {scope with Dynamic = dynamic; Lexical = lexical} sexpr
-            scope, newI, List.append newD data
+            let newI, newD = evalSexpr {Global = globe; Dynamic = dynamic; Lexical = lexical} sexpr
+            globe, newI, List.append newD data
         | EvalTop (nargs, dynamic, lexical) ->
             match data with
             | [] ->
                 let err = sprintf "evaluation stack is empty"
-                scope, [], [Atom (Error err)]
+                globe, [], [Atom (Error err)]
             | top::rest ->
-                let newI, newD = evalTop {scope with Dynamic = dynamic; Lexical = lexical} top nargs rest
-                scope, newI, List.append newD rest
+                let newI, newD = evalTop {Global = globe; Dynamic = dynamic; Lexical = lexical} top nargs rest
+                globe, newI, List.append newD rest
         | CallFunction (f, nargs, dynamic) ->
             let args, rest = splitStack data nargs
-            let newI = callFunction {scope with Dynamic = dynamic} f args
-            scope, [newI], rest
+            let newI = callFunction {Global = globe; Dynamic = dynamic; Lexical = f.Environment} f args
+            globe, [newI], rest
         | CallPrimitive (p, nargs) ->
             let args, rest = splitStack data nargs
             let result = callPrimitive p args
-            scope, [], result::rest
-        | CallSpecialForm (f, nargs, lexical) ->
+            globe, [], result::rest
+        | CallSpecialForm (f, nargs, dynamic, lexical) ->
             let args, rest = splitStack data nargs
-            let newS, newI, newD = callSpecialForm f args {scope with Lexical = lexical}
-            newS, newI, List.append newD rest
+            let globe, newI, newD = callSpecialForm f args {Global = globe; Dynamic = dynamic; Lexical = lexical}
+            globe, newI, List.append newD rest
 
     /// Eval: eval SEXPR in SCOPE.
     /// Use stacks of instructions and values to be tail recursive.
     let eval (globe: Global) (sexpr: Sexpr): Global * Sexpr =
-        let rec loop (scope : Scope) instructions data =
+        let rec loop globe instructions data =
             match instructions with
                 | [] -> match data with
-                        | result::_ -> !scope.Global, result
-                        | [] -> !scope.Global, Atom (Error "Nothing to return")
+                        | result::_ -> globe, result
+                        | [] -> globe, Atom (Error "Nothing to return")
                 | instr::rest ->
-                    let scope, instructions, data = evalInstruction scope instr data
-                    loop scope (List.append instructions rest) data
-        loop {emptyScope with Global = ref globe}
-             [EvalSexpr (sexpr, emptyScope.Dynamic, emptyScope.Lexical)]
-             []
+                    let globe, instructions, data = evalInstruction globe instr data
+                    loop globe (List.append instructions rest) data
+        loop globe [EvalSexpr (sexpr, emptyScope.Dynamic, emptyScope.Lexical)] []
