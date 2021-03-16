@@ -52,6 +52,7 @@ module Evaluator =
             evalSexprInScope [CallFunction (f, nargs, scope.Dynamic)] args, rest
         | Atom (Macro f) ->
             [ CallFunction (f, nargs, scope.Dynamic)
+              EvalTop (1, scope.Dynamic, scope.Lexical)
             ], stack
         | Atom (Primitive p) ->
             let args, rest = splitStack stack nargs
@@ -62,6 +63,8 @@ module Evaluator =
                 evalSexprInScope [CallSpecialForm (f, nargs, scope.Dynamic, scope.Lexical)] args, rest
             else
                 [CallSpecialForm (f, nargs, scope.Dynamic, scope.Lexical)], stack
+        | Sexpr _ ->
+            [EvalSexpr (top, scope.Dynamic, scope.Lexical)], stack
         | _ ->
             let err = sprintf "'%s' is not a function or special form" (Printer.print top)
             [], (Atom (Error err))::stack
