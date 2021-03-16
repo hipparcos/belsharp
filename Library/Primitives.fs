@@ -42,3 +42,16 @@ module Primitives =
             | Sexpr (_::it) -> Sexpr it
             | Pair (_, it) -> it
             | _ -> Atom Nil
+
+    let defPrim n p =
+        { Primitive.Name = n
+          Primitive.Func = p }
+
+    let primitives : Map<Symbol, Primitive> =
+        let prims = [
+            defPrim "+" add
+            defPrim "*" mul
+            defPrim "car" car
+            defPrim "cdr" cdr
+        ]
+        List.fold (fun prims (p:Primitive) -> prims.Add(Sym p.Name, p)) Map.empty prims

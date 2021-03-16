@@ -28,11 +28,18 @@ module Environments =
 
     let lookupLexical = findInLexical (fun _ -> id)
 
+    // litRef is an early declaration of the lit special form.
+    let litRef : SpecialForm ref =
+        ref { Name = "litRef"
+              Func = fun s d -> failwith "litRef must be defined in SpecialForms.fs"
+              EvalArgs = false }
+
     /// lookup: retrieve the value bound to a symbol in the current scope.
     let lookup (sym: Symbol) (scope: Scope): Sexpr =
         match sym with
         | Sym "globe" -> globeToAlist !scope.Global
         | Sym "scope" -> scopeToAlist !scope.Lexical
+        | Sym "lit" -> Atom (SpecialForm !litRef)
         | _ ->
             match (lookupDynamic sym scope.Dynamic) with
             | Some sexpr -> sexpr

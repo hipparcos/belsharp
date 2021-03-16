@@ -6,30 +6,18 @@ module Evaluator =
     open Lisp
     open Environments
 
-    let defPrim n p =
-        { Primitive.Name = n
-          Primitive.Func = p }
-        |> Primitive
-        |> Atom
-
-    let defForm n f e =
-        { SpecialForm.Name = n
-          SpecialForm.Func = f
-          SpecialForm.EvalArgs = e }
-        |> SpecialForm
-        |> Atom
-
     /// DefaultScope: a scope with primitives and special forms defined
     /// in the global environment.
     let defaultGlobe =
-        Map.empty
-           .Add(Sym "+", defPrim "+" Primitives.add)
-           .Add(Sym "*", defPrim "*" Primitives.mul)
-           .Add(Sym "car", defPrim "car" Primitives.car)
-           .Add(Sym "cdr", defPrim "cdr" Primitives.cdr)
-           .Add(Sym "lit", defForm "lit" SpecialForms.lit false)
-           .Add(Sym "quote", defForm "quote" SpecialForms.quote false)
-           .Add(Sym "set", defForm "set" SpecialForms.set true)
+        Map.empty<Symbol, Sexpr>
+        |> fun globe ->
+               Map.fold (fun (g:Environment) s p -> g.Add(s, p |> Primitive |> Atom))
+                        globe
+                        Primitives.primitives
+        |> fun globe ->
+               Map.fold (fun (g:Environment) s f -> g.Add(s, f |> SpecialForm |> Atom))
+                        globe
+                        SpecialForms.specialForms
         |> Global
 
     let emptyScope =

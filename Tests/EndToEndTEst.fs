@@ -32,4 +32,13 @@ let tests =
             let _, got = evalFromStrings defaultGlobe input
             let want = "42"
             Expect.equal got want "the result should be 42"
+
+        testCase "it should allow to access shadowed primitives" <| fun _ ->
+            let input =
+                [ "(set '+ 42)"
+                  "(set 'lit nil)"
+                  "((lit prim +) + +)" ]
+            let _, got = evalFromStrings defaultGlobe input
+            let want = "84"
+            Expect.equal got want "the result should be 84"
     ]
