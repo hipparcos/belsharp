@@ -99,7 +99,7 @@ module Evaluator =
                 globe, [], [Atom (Error err)]
             | top::rest ->
                 let newI, newD = evalTop {Global = globe; Dynamic = dynamic; Lexical = lexical} top nargs rest
-                globe, newI, List.append newD rest
+                globe, newI, newD
         | CallFunction (f, nargs, dynamic) ->
             let args, rest = splitStack data nargs
             let newI = callFunction {Global = globe; Dynamic = dynamic; Lexical = f.Environment} f args
