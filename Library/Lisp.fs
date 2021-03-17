@@ -7,6 +7,7 @@ module Lisp =
     type Symbol = Sym of string
 
     /// Atom: the leaf of S-expressions.
+    [<CustomEquality;CustomComparison>]
     type Atom =
         // Readable:
         | Nil
@@ -18,6 +19,33 @@ module Lisp =
         | Primitive of Primitive
         | SpecialForm of SpecialForm
         | Error of string
+        override x.Equals(y) =
+            match y with
+            | :? Atom as y ->
+                match x,y with
+                | Nil, Nil -> true
+                | Number x, Number y -> x = y
+                | Symbol x, Symbol y -> x = y
+                | Function x, Function y -> x = y
+                | Macro x, Macro y -> x = y
+                | Primitive x, Primitive y -> x = y
+                | SpecialForm x, SpecialForm y -> x = y
+                | Error x, Error y -> x = y
+                | _ -> false
+            | _ -> invalidArg "y" "cannot compare value of different types"
+
+        override x.GetHashCode() = hash x
+
+        interface System.IComparable with
+            member x.CompareTo y =
+                match y with
+                | :? Atom as y ->
+                    match x,y with
+                    | Nil, Nil -> 0
+                    | Number x, Number y -> compare x y
+                    | Symbol x, Symbol y -> compare x y
+                    | _ -> -1
+                | _ -> invalidArg "y" "cannot compare value of different types"
 
     /// Sexpr: lists, pairs the node of S-expressions and their atoms.
     /// Lists are represented as F# lists instead of cons Pair so
@@ -79,7 +107,7 @@ module Lisp =
                 | _ -> false
 
         override x.GetHashCode() = hash (x.Name)
-        
+
     and SpecialFormName = string
     
     and SpecialFormFunc = Scope -> DataStack -> SpecialFormResult
@@ -100,6 +128,9 @@ module Lisp =
                 | _ -> false
 
         override x.GetHashCode() = hash (x.Name)
+
+    let t = Atom (Symbol (Sym "t"))
+    let nil = Atom Nil
 
     let environmentToAList (env : Environment) : Sexpr list =
         Map.fold (fun acc s v ->

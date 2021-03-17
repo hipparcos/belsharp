@@ -7,6 +7,39 @@ module Primitives =
     
     open Lisp
 
+    let eq (args : Sexpr list) : Sexpr =
+        if args.IsEmpty then
+            nil
+        else
+            if List.forall ((=) args.Head) args.Tail then
+                t
+            else
+                nil
+
+    let gt (args : Sexpr list) : Sexpr =
+        let rec loop lst =
+            match lst with
+            | [ ] -> nil
+            | [_] -> t
+            | first::second::rest ->
+                if first > second then
+                    loop (second::rest)
+                else
+                    nil
+        loop args
+
+    let lt (args : Sexpr list) : Sexpr =
+        let rec loop lst =
+            match lst with
+            | [ ] -> nil
+            | [_] -> t
+            | first::second::rest ->
+                if first < second then
+                    loop (second::rest)
+                else
+                    nil
+        loop args
+
     /// add: add numbers.
     let add (args : Sexpr list) : Sexpr =
         args
@@ -64,6 +97,9 @@ module Primitives =
 
     let primitives : Map<Symbol, Primitive> =
         let prims = [
+            defPrim "=" eq
+            defPrim "<" lt
+            defPrim ">" gt
             defPrim "+" add
             defPrim "*" mul
             defPrim "car" car
