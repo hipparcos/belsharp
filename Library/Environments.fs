@@ -40,6 +40,7 @@ module Environments =
         | Sym "globe" -> globeToAlist scope.Global
         | Sym "scope" -> scopeToAlist !scope.Lexical
         | Sym "lit" -> Atom (SpecialForm !litRef)
+        | Sym "t" -> Atom (Symbol (Sym "t"))
         | _ ->
             match (lookupDynamic sym scope.Dynamic) with
             | Some sexpr -> sexpr

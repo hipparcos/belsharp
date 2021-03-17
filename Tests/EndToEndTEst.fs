@@ -115,4 +115,44 @@ let tests =
             let _, got = evalFromStrings (StdLib.loadInUnsafe defaultGlobe) input
             let want = "36"
             Expect.equal got want "the result should be 36"
+
+        testCase "it should eval conditionally to true" <| fun _ ->
+            let input = "(if t 'true 'false)"
+            let _, got = evalFromString (StdLib.loadInUnsafe defaultGlobe) input
+            let want = "true"
+            Expect.equal got want "the result should be the symbol true"
+
+        testCase "it should eval conditionally to false" <| fun _ ->
+            let input = "(if nil 'true 'false)"
+            let _, got = evalFromString (StdLib.loadInUnsafe defaultGlobe) input
+            let want = "false"
+            Expect.equal got want "the result should be the symbol false"
+
+        testCase "it should eval conditionally to nil when false and missing else" <| fun _ ->
+            let input = "(if nil 'true)"
+            let _, got = evalFromString (StdLib.loadInUnsafe defaultGlobe) input
+            let want = "nil"
+            Expect.equal got want "the result should be nil"
+
+        testCase "it should eval conditionally to true when true and missing else" <| fun _ ->
+            let input = "(if t 'true)"
+            let _, got = evalFromString (StdLib.loadInUnsafe defaultGlobe) input
+            let want = "true"
+            Expect.equal got want "the result should be the symbol true"
+
+        testCase "it should eval conditionally preventing eval of else branch" <| fun _ ->
+            let input =
+                [ "(set 'x 40)"
+                  "(if t (set 'x (+ x 2)) (set 'x (+ x 20)))" ]
+            let _, got = evalFromStrings (StdLib.loadInUnsafe defaultGlobe) input
+            let want = "42"
+            Expect.equal got want "the result should be 42 not 62"
+
+        testCase "it should eval conditionally preventing eval of if branch" <| fun _ ->
+            let input =
+                [ "(set 'x 40)"
+                  "(if nil (set 'x (+ x 20))) (set 'x (+ x 2))" ]
+            let _, got = evalFromStrings (StdLib.loadInUnsafe defaultGlobe) input
+            let want = "42"
+            Expect.equal got want "the result should be 42 not 62"
     ]

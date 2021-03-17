@@ -34,6 +34,34 @@ module SpecialForms =
         | _ ->
             scope.Global, [], [Atom Nil]
 
+    let ifElse (scope:Scope) (args:DataStack) : SpecialFormResult =
+        match args with
+        | [] ->
+            scope.Global, [], [Atom (Error "malformed if")]
+        | c::args ->
+            let ifBranch, elseBranch = match args with
+                                       | i::e::_ -> i, e
+                                       | [i] -> i, Atom Nil
+                                       | _ -> Atom Nil, Atom Nil
+            let innerIf scope cond : SpecialFormResult =
+                match cond with
+                | [Atom Nil] ->
+                    scope.Global, [
+                        EvalSexpr (elseBranch, scope.Dynamic, scope.Lexical)
+                    ], []
+                | _ ->
+                    scope.Global, [
+                        EvalSexpr (ifBranch, scope.Dynamic, scope.Lexical)
+                    ], []
+            let form =
+                { SpecialForm.Name = "if-internal"
+                  SpecialForm.Func = innerIf
+                  SpecialForm.EvalArgs = false }
+            scope.Global, [
+                EvalSexpr (c, scope.Dynamic, scope.Lexical)
+                CallSpecialForm (form , 1, scope.Dynamic, scope.Lexical)
+            ], []
+
     let set (scope:Scope) (args:DataStack) : SpecialFormResult =
         match args with
         | (Atom (Symbol s))::v::_ ->
@@ -55,6 +83,7 @@ module SpecialForms =
     let internal specialFormsWithoutLit : Map<Symbol, SpecialForm> =
         let forms = [
             defForm "dyn" dyn false
+            defForm "if" ifElse false
             defForm "quote" quote false
             defForm "set" set true
         ]
