@@ -52,7 +52,7 @@ module Evaluator =
             evalSexprInScope [CallFunction (f, nargs, scope.Dynamic)] args, rest
         | Atom (Macro f) ->
             [ CallFunction (f, nargs, scope.Dynamic)
-              EvalTop (1, scope.Dynamic, scope.Lexical)
+              EvalTop (0, scope.Dynamic, scope.Lexical)
             ], stack
         | Atom (Primitive p) ->
             let args, rest = splitStack stack nargs
