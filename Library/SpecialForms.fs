@@ -59,7 +59,7 @@ module SpecialForms =
                   SpecialForm.EvalArgs = false }
             scope.Global, [
                 EvalSexpr (c, scope.Dynamic, scope.Lexical)
-                CallSpecialForm (form , 1, scope.Dynamic, scope.Lexical)
+                CallSpecialForm (form, 1, scope.Dynamic, scope.Lexical)
             ], []
 
     let set (scope:Scope) (args:DataStack) : SpecialFormResult =

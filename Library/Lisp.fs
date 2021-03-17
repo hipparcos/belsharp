@@ -45,6 +45,7 @@ module Lisp =
         | EvalSexpr of Sexpr * Dynamic ref * Lexical ref
         | EvalTop of nargs:int * Dynamic ref * Lexical ref
         | CallFunction of Function * nargs:int * Dynamic ref
+        | CallMacro of Function * nargs:int * Dynamic ref
         | CallPrimitive of Primitive * nargs:int
         | CallSpecialForm of SpecialForm * nargs:int * Dynamic ref * Lexical ref
 

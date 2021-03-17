@@ -51,7 +51,7 @@ module Evaluator =
             let args, rest = splitStack stack nargs
             evalSexprInScope [CallFunction (f, nargs, scope.Dynamic)] args, rest
         | Atom (Macro f) ->
-            [ CallFunction (f, nargs, scope.Dynamic)
+            [ CallMacro (f, nargs, scope.Dynamic)
               EvalTop (0, scope.Dynamic, scope.Lexical)
             ], stack
         | Atom (Primitive p) ->
@@ -101,6 +101,10 @@ module Evaluator =
                 let newI, newD = evalTop {Global = globe; Dynamic = dynamic; Lexical = lexical} top nargs rest
                 globe, newI, newD
         | CallFunction (f, nargs, dynamic) ->
+            let args, rest = splitStack data nargs
+            let newI = callFunction {Global = globe; Dynamic = dynamic; Lexical = f.Environment} f (List.rev args)
+            globe, [newI], rest
+        | CallMacro (f, nargs, dynamic) ->
             let args, rest = splitStack data nargs
             let newI = callFunction {Global = globe; Dynamic = dynamic; Lexical = f.Environment} f args
             globe, [newI], rest

@@ -155,4 +155,16 @@ let tests =
             let _, got = evalFromStrings (StdLib.loadInUnsafe defaultGlobe) input
             let want = "42"
             Expect.equal got want "the result should be 42 not 62"
+
+        testCase "it should return the length of the list" <| fun _ ->
+            let input = "(len '(1 2 3))"
+            let _, got = evalFromString (StdLib.loadInUnsafe defaultGlobe) input
+            let want = "3"
+            Expect.equal got want "the result should be 3"
+
+        testCase "it should return the length of the empty list" <| fun _ ->
+            let input = "(len '())"
+            let _, got = evalFromString (StdLib.loadInUnsafe defaultGlobe) input
+            let want = "0"
+            Expect.equal got want "the result should be 0"
     ]
