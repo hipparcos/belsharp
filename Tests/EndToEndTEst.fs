@@ -93,4 +93,26 @@ let tests =
             let _, got = evalFromStrings (StdLib.loadInUnsafe defaultGlobe) input
             let want = "3"
             Expect.equal got want "the result should be 3 as the set form is executed multiple times"
+
+        testCase "it should nest lexical scopes with let" <| fun _ ->
+            let input = "(let x 1 (let y 2 (join x y)))"
+            let _, got = evalFromString (StdLib.loadInUnsafe defaultGlobe) input
+            let want = "(1 . 2)"
+            Expect.equal got want "the result should be (1 . 2)"
+
+        testCase "it should shadow binding in lexical scopes with let" <| fun _ ->
+            let input = "(let x 1 (let x 2 x))"
+            let _, got = evalFromString (StdLib.loadInUnsafe defaultGlobe) input
+            let want = "2"
+            Expect.equal got want "the result should be 2"
+
+        testCase "it should let over lambda" <| fun _ ->
+            let input =
+                [ "(let x 0
+                     (do (def inc () (set 'x (+ x 1)))
+                         (def sqr () (set 'x (* x x)))))"
+                  "(inc)(inc)(sqr)(inc)(inc)(sqr)" ]
+            let _, got = evalFromStrings (StdLib.loadInUnsafe defaultGlobe) input
+            let want = "36"
+            Expect.equal got want "the result should be 36"
     ]
