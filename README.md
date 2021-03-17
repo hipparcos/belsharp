@@ -26,8 +26,17 @@ The `test` make target is available as well.
 Only a basic interpreter is implemented.
 
 **Supported special forms:**
+* `dyn`: create a dynamic scope, execute the body in it
+* `if`: branch conditionally.
+* `lit`: prevent evaluation, define closure and macros.
 * `quote`: prevent evaluation.
+* `set`: bound a value to a symbol.
 
 **Supported primitives:**
 * `+`: add numbers.
-
+* `*`: multiply numbers.
+* `car`: return the car of a list (or pair) or nil.
+* `cdr`: return the cdr of a list (or pair) or nil.
+* `do`: evaluate expression in sequence.
+* `join`: create a pair.
+* `list`: create a list .
