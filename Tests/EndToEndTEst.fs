@@ -199,4 +199,40 @@ let tests =
             let _, got = evalFromStrings defaultGlobe input
             let want = "(t nil nil nil)"
             Expect.equal got want "it should be (t nil nil nil)"
+
+        testCase "it should test or" <| fun _ ->
+            let input = "(list (or) (or t nil) (or nil t))"
+            let _, got = evalFromString (StdLib.loadInUnsafe defaultGlobe) input
+            let want = "(nil t t)"
+            Expect.equal got want "it should be (nil t t)"
+
+        testCase "it should test or for side effects" <| fun _ ->
+            let input = "(set 'x 0)(list (or (set 'x (+ x 1)) (set 'x (+ x 1)) (set 'x (+ x 1))) x)"
+            let _, got = evalFromString (StdLib.loadInUnsafe defaultGlobe) input
+            let want = "(1 1)"
+            Expect.equal got want "it should be (1 1)"
+
+        testCase "it should test and" <| fun _ ->
+            let input = "(list (and) (and t t) (and t nil) (and nil t))"
+            let _, got = evalFromString (StdLib.loadInUnsafe defaultGlobe) input
+            let want = "(t t nil nil)"
+            Expect.equal got want "it should be (t t nil nil)"
+
+        testCase "it should test and for side-effects" <| fun _ ->
+            let input = "(set 'x 0)(list (and (set 'x (+ x 1)) (set 'x (+ x 1)) (set 'x (+ x 1))) x)"
+            let _, got = evalFromString (StdLib.loadInUnsafe defaultGlobe) input
+            let want = "(3 3)"
+            Expect.equal got want "it should be (3 3)"
+
+        testCase "it should test <=" <| fun _ ->
+            let input = "(list (<= 1 1 2 2) (<= 1 0))"
+            let _, got = evalFromString (StdLib.loadInUnsafe defaultGlobe) input
+            let want = "(t nil)"
+            Expect.equal got want "it should be (t nil)"
+
+        testCase "it should test >=" <| fun _ ->
+            let input = "(list (>= 2 2 1 1) (>= 0 1))"
+            let _, got = evalFromString (StdLib.loadInUnsafe defaultGlobe) input
+            let want = "(t nil)"
+            Expect.equal got want "it should be (t nil)"
     ]

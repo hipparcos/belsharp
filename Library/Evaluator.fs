@@ -63,7 +63,7 @@ module Evaluator =
                 evalSexprInScope [CallSpecialForm (f, nargs, scope.Dynamic, scope.Lexical)] args, rest
             else
                 [CallSpecialForm (f, nargs, scope.Dynamic, scope.Lexical)], stack
-        | Sexpr _ ->
+        | Sexpr _ | Pair _ | Atom _ when nargs = 0  ->
             [EvalSexpr (top, scope.Dynamic, scope.Lexical)], stack
         | _ ->
             let err = sprintf "'%s' is not a function or special form" (Printer.print top)
