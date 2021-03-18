@@ -38,11 +38,11 @@ module SpecialForms =
         match args with
         | [] ->
             scope.Global, [], [Atom (Error "malformed if")]
-        | c::args ->
-            let ifBranch, elseBranch = match args with
-                                       | i::e::_ -> i, e
-                                       | [i] -> i, Atom Nil
-                                       | _ -> Atom Nil, Atom Nil
+        | test::args ->
+            let thenBranch, elseBranch = match args with
+                                         | i::e::_ -> i, e
+                                         | [i] -> i, Atom Nil
+                                         | _ -> Atom Nil, Atom Nil
             let innerIf scope cond : SpecialFormResult =
                 match cond with
                 | [Atom Nil] ->
@@ -51,14 +51,14 @@ module SpecialForms =
                     ], []
                 | _ ->
                     scope.Global, [
-                        EvalSexpr (ifBranch, scope.Dynamic, scope.Lexical)
+                        EvalSexpr (thenBranch, scope.Dynamic, scope.Lexical)
                     ], []
             let form =
                 { SpecialForm.Name = "if-internal"
                   SpecialForm.Func = innerIf
                   SpecialForm.EvalArgs = false }
             scope.Global, [
-                EvalSexpr (c, scope.Dynamic, scope.Lexical)
+                EvalSexpr (test, scope.Dynamic, scope.Lexical)
                 CallSpecialForm (form, 1, scope.Dynamic, scope.Lexical)
             ], []
 
