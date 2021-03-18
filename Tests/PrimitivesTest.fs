@@ -65,6 +65,12 @@ let tests =
                               Atom (Number 3)]
             Expect.equal got want "the cdr should be (2 3)"
 
+        testCase "it should return the cdr of a single element list" <| fun _ ->
+            let inp = [Sexpr [Atom (Number 1)]]
+            let got = Primitives.cdr inp
+            let want = Atom Nil
+            Expect.equal got want "the cdr should be nil"
+
         testCase "it should return the cdr of an empty list" <| fun _ ->
             let inp = [Sexpr []]
             let got = Primitives.cdr inp

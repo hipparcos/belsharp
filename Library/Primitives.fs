@@ -84,7 +84,7 @@ module Primitives =
     /// cdr: return the cdr of a list / pair.
     let cdr (stack : Sexpr list) : Sexpr =
         match stack.Head with
-            | Sexpr [] -> Atom Nil
+            | Sexpr [] | Sexpr [_] -> Atom Nil
             | Sexpr (_::it) -> Sexpr it
             | Pair (_, it) -> it
             | _ -> Atom Nil
