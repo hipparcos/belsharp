@@ -132,7 +132,9 @@ module SpecialForms =
                                      |> List.map (fun it -> match it with
                                                             | Atom (Symbol s) -> s
                                                             | _ -> Sym "")
-                                 | _ -> []
+                                     |> ListOfSymbols
+                                 | Atom (Symbol it) -> SingleList it
+                                 | _ -> ListOfSymbols []
                 let cons = if typ = symMac then Macro else Function
                 scope.Global, [], [
                     Atom (cons {

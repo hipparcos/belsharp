@@ -78,7 +78,10 @@ module Evaluator =
                             | [] -> Atom Nil, []
                             | v::vs -> v, vs
                 setArgsInScope (env.Add(p, v)) ps vs
-        let lex = setArgsInScope Map.empty func.Parameters args
+        let lex = match func.Parameters with
+                  | ListOfSymbols parameters -> setArgsInScope Map.empty parameters args
+                  | SingleList symbol ->
+                      Map.empty.Add(symbol, if args.IsEmpty then Atom Nil else Sexpr args)
         EvalSexpr (func.Body, scope.Dynamic, ref (Lexical (lex,Some func.Environment)))
 
     let internal callPrimitive (prim:Primitive) args: Sexpr =

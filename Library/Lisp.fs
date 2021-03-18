@@ -81,14 +81,20 @@ module Lisp =
 
     and EvalStack = Instruction list
 
+    and FunctionParameters =
+        | ListOfSymbols of Symbol list
+        | SingleList of Symbol
     and Function =
         { Environment: Lexical ref
-          Parameters: Symbol list
+          Parameters: FunctionParameters
           Body: Sexpr }
 
         member this.parameterList =
-            List.map (Symbol >> Atom) this.Parameters
-            |> Sexpr
+            match this.Parameters with
+            | ListOfSymbols symbols ->
+                List.map (Symbol >> Atom) symbols
+                |> Sexpr
+            | SingleList symbol -> Atom (Symbol symbol)
 
     and PrimitiveName = string
 
