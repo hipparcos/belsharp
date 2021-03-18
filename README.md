@@ -34,6 +34,7 @@ Only a basic interpreter is implemented.
 
 **Supported primitives:**
 * `+`: add numbers.
+* `-`: subtract numbers.
 * `*`: multiply numbers.
 * `car`: return the car of a list (or pair) or nil.
 * `cdr`: return the cdr of a list (or pair) or nil.

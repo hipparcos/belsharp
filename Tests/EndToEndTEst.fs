@@ -26,6 +26,18 @@ let tests =
             let want = "6"
             Expect.equal got want "the sum should be 6"
 
+        testCase "it should oppose" <| fun _ ->
+            let input = "(- 42)"
+            let _, got = evalFromString defaultGlobe input
+            let want = "-42"
+            Expect.equal got want "the opposite should be -42"
+
+        testCase "it should eval subtraction" <| fun _ ->
+            let input = "(- 10 100 1000)"
+            let _, got = evalFromString defaultGlobe input
+            let want = "-1090"
+            Expect.equal got want "the total should be -1090"
+
         testCase "it should set x then return it" <| fun _ ->
             let input =
                 [ "(set 'x 42)"

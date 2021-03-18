@@ -50,6 +50,19 @@ module Primitives =
         |> Number
         |> Atom
 
+    let sub (args : Sexpr list) : Sexpr =
+        match args with
+        | [] -> Atom (Number 0)
+        | [Atom (Number it)] -> Atom (Number -it)
+        | _ ->
+            args
+            |> List.map (fun s -> match s with
+                                  | Atom (Number n) -> n
+                                  | _ -> 0)
+            |> fun lst -> List.fold (-) lst.Head lst.Tail
+            |> Number
+            |> Atom
+
     /// mul: multiply numbers.
     let mul (args : Sexpr list) : Sexpr =
         args
@@ -101,6 +114,7 @@ module Primitives =
             defPrim "<" lt
             defPrim ">" gt
             defPrim "+" add
+            defPrim "-" sub
             defPrim "*" mul
             defPrim "car" car
             defPrim "cdr" cdr
