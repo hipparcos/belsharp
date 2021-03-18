@@ -179,4 +179,24 @@ let tests =
             let _, got = evalFromString (StdLib.loadInUnsafe defaultGlobe) input
             let want = "0"
             Expect.equal got want "the result should be 0"
+
+        testCase "it should test id for numbers" <| fun _ ->
+            let input = "(list (id 1 1) (id 1 2) (id 1 nil))"
+            let _, got = evalFromString defaultGlobe input
+            let want = "(t nil nil)"
+            Expect.equal got want "it should be (t nil)"
+
+        testCase "it should test id for symbols" <| fun _ ->
+            let input = "(list (id 'x 'x) (id nil nil) (id 'x 'y) (id 'x nil))"
+            let _, got = evalFromString defaultGlobe input
+            let want = "(t t nil nil)"
+            Expect.equal got want "it should be (t t nil nil)"
+
+        testCase "it should test id for pairs" <| fun _ ->
+            let input =
+                [ "(set 'x '(1 2))"
+                  "(list (id x x) (id x '(1 2)) (id x 1) (id x nil))" ]
+            let _, got = evalFromStrings defaultGlobe input
+            let want = "(t nil nil nil)"
+            Expect.equal got want "it should be (t nil nil nil)"
     ]

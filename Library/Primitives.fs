@@ -89,6 +89,25 @@ module Primitives =
             | Pair (_, it) -> it
             | _ -> Atom Nil
 
+    let id (args : Sexpr list) : Sexpr =
+        match args with
+        | [Atom x; Atom y] ->
+            if x = y then
+                t
+            else
+                nil
+        | [Sexpr x; Sexpr y] ->
+            if LanguagePrimitives.PhysicalEquality x y then
+                t
+            else
+                nil
+        | [Pair _ as x; Pair _ as y] ->
+            if LanguagePrimitives.PhysicalEquality x y then
+                t
+            else
+                nil
+        | _ -> Atom Nil
+
     let list (stack : Sexpr list) : Sexpr =
         Sexpr stack
 
@@ -119,6 +138,7 @@ module Primitives =
             defPrim "car" car
             defPrim "cdr" cdr
             defPrim "do" progn
+            defPrim "id" id
             defPrim "join" join
             defPrim "list" list
         ]
