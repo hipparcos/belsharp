@@ -118,6 +118,16 @@ module Primitives =
         | [car; cdr] -> Pair (car, cdr)
         | _ -> Atom Nil
 
+    /// Print all arguments separated by spaces, return the last one.
+    /// Return nil when no arguments passed.
+    let prn (args : Sexpr list) : Sexpr =
+        if args.IsEmpty then
+            Atom Nil
+        else
+            let output = Printer.print >> printf "%s "
+            List.fold (fun _ it -> output it; it) nil args
+            |> fun last -> printfn ""; last
+
     let progn (stack : Sexpr list) : Sexpr =
         match List.tryLast stack with
         | Some v -> v
@@ -141,5 +151,6 @@ module Primitives =
             defPrim "id" id
             defPrim "join" join
             defPrim "list" list
+            defPrim "prn" prn
         ]
         List.fold (fun prims (p:Primitive) -> prims.Add(Sym p.Name, p)) Map.empty prims
